@@ -1,0 +1,11 @@
+kafka:
+  bootstrap_servers:
+    - "localhost:9092"
+    - "kafka:29092"
+  topics:
+    raw_logs: "api-raw-logs"
+    threat_alerts: "threat-alerts"
+    dead_letter: "dead-letter-events"
+  partitions: 3
+  replication_factor: 1
+  partition_key: "client_ip"

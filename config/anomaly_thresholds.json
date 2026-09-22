@@ -1,0 +1,18 @@
+{
+  "rule_thresholds": {
+    "ddos_max_requests_per_min": 100,
+    "brute_force_failed_logins_per_min": 10,
+    "endpoint_abuse_max_hits_per_min": 50,
+    "http_5xx_error_rate_threshold": 0.20,
+    "max_payload_bytes": 10485760
+  },
+  "statistical_thresholds": {
+    "z_score_multiplier": 3.0,
+    "baseline_window_samples": 30
+  },
+  "ml_isolation_forest": {
+    "contamination": 0.05,
+    "n_estimators": 100,
+    "random_state": 42
+  }
+}

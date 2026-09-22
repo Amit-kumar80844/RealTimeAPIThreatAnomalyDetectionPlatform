@@ -1,0 +1,2024 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CSE412 — Real-Time API Threat & Anomaly Detection Platform</title>
+    <meta name="description" content="CSE412 Applied Big Data project: Real-time API threat detection using Apache Kafka, Spark Structured Streaming, and Hive on HDFS.">
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
+    <style>
+        /* ── Design Tokens ────────────────────────────────────────── */
+        :root {
+            --bg:        #080d17;
+            --surface:   #0e1623;
+            --card:      #131f30;
+            --border:    #1e2e45;
+            --border2:   #243548;
+            --text:      #e2eaf5;
+            --muted:     #6b8299;
+            --accent:    #22d3ee;   /* cyan */
+            --green:     #4ade80;
+            --red:       #f87171;
+            --amber:     #fbbf24;
+            --purple:    #a78bfa;
+            --orange:    #fb923c;
+            --brand:     #38bdf8;
+        }
+
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        html { scroll-behavior: smooth; }
+
+        body {
+            background: var(--bg);
+            color: var(--text);
+            font-family: 'Inter', sans-serif;
+            font-size: 14px;
+            line-height: 1.6;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 5px; height: 5px; }
+        ::-webkit-scrollbar-track { background: var(--surface); }
+        ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 4px; }
+
+        code, pre, .mono { font-family: 'Fira Code', monospace; }
+
+        /* ── Layout ──────────────────────────────────────────────── */
+        .container { max-width: 1300px; margin: 0 auto; padding: 0 20px; }
+
+        /* ── Header ──────────────────────────────────────────────── */
+        header {
+            background: rgba(14, 22, 35, 0.9);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--border);
+            position: sticky; top: 0; z-index: 100;
+        }
+        .header-inner {
+            display: flex; align-items: center; justify-content: space-between;
+            height: 60px; gap: 16px;
+        }
+        .logo { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+        .logo-icon {
+            width: 38px; height: 38px; border-radius: 10px;
+            background: linear-gradient(135deg, #0ea5e9, #6366f1);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 16px; color: #fff; flex-shrink: 0;
+            box-shadow: 0 0 20px rgba(14,165,233,.35);
+        }
+        .logo-text { line-height: 1.2; }
+        .logo-label { font-size: 9px; font-weight: 700; letter-spacing: 2px; color: var(--accent); text-transform: uppercase; }
+        .logo-title { font-size: 13px; font-weight: 700; color: var(--text); }
+
+        /* Nav */
+        nav { display: flex; gap: 4px; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 4px; }
+        .nav-btn {
+            border: none; background: none; cursor: pointer; padding: 6px 12px;
+            border-radius: 8px; font-size: 11px; font-weight: 600; color: var(--muted);
+            font-family: 'Inter', sans-serif; transition: all .2s; white-space: nowrap;
+            display: flex; align-items: center; gap: 5px;
+        }
+        .nav-btn:hover { color: var(--text); background: var(--border); }
+        .nav-btn.active { background: linear-gradient(135deg,#0ea5e9,#6366f1); color: #fff; box-shadow: 0 0 16px rgba(14,165,233,.3); }
+
+        .badge-live {
+            display: flex; align-items: center; gap: 5px;
+            font-size: 10px; font-weight: 600; color: var(--green);
+            background: rgba(74,222,128,.08); border: 1px solid rgba(74,222,128,.25);
+            padding: 4px 10px; border-radius: 20px;
+        }
+        .dot-pulse { width: 6px; height: 6px; border-radius: 50%; background: var(--green); animation: pulse 1.4s infinite; }
+        @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+
+        /* ── Tab Content ─────────────────────────────────────────── */
+        .tab-panel { display: none; padding: 24px 0; }
+        .tab-panel.active { display: block; }
+
+        /* ── Cards ───────────────────────────────────────────────── */
+        .card {
+            background: var(--card); border: 1px solid var(--border);
+            border-radius: 16px; padding: 20px;
+        }
+        .card-sm { padding: 14px 16px; }
+        .card-title { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); margin-bottom: 12px; display: flex; align-items: center; gap: 7px; }
+        .card-title i { font-size: 11px; }
+
+        /* Grid layouts */
+        .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+        .grid3 { display: grid; grid-template-columns: repeat(3,1fr); gap: 16px; }
+        .grid4 { display: grid; grid-template-columns: repeat(4,1fr); gap: 14px; }
+        @media(max-width:1024px){ .grid4{grid-template-columns:repeat(2,1fr);} .grid3{grid-template-columns:1fr 1fr;} }
+        @media(max-width:640px){ .grid2,.grid3,.grid4{grid-template-columns:1fr;} nav{display:none;} }
+
+        /* ── Stat Cards ──────────────────────────────────────────── */
+        .stat-card {
+            background: var(--card); border: 1px solid var(--border); border-radius: 14px;
+            padding: 18px 20px; display: flex; align-items: center; gap: 14px;
+            transition: border-color .3s, box-shadow .3s;
+        }
+        .stat-card:hover { border-color: var(--border2); box-shadow: 0 4px 24px rgba(0,0,0,.35); }
+        .stat-icon { width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; }
+        .stat-val { font-size: 26px; font-weight: 800; line-height: 1; }
+        .stat-label { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+        /* ── Buttons ─────────────────────────────────────────────── */
+        .btn {
+            border: none; cursor: pointer; font-family: 'Inter', sans-serif;
+            font-weight: 700; border-radius: 10px; display: inline-flex; align-items: center; gap: 6px;
+            transition: all .2s; font-size: 12px; padding: 9px 16px;
+        }
+        .btn-primary { background: linear-gradient(135deg,#0ea5e9,#6366f1); color: #fff; box-shadow: 0 4px 16px rgba(14,165,233,.3); }
+        .btn-primary:hover { box-shadow: 0 6px 24px rgba(14,165,233,.45); transform: translateY(-1px); }
+        .btn-stop { background: linear-gradient(135deg,#ef4444,#b91c1c); color: #fff; box-shadow: 0 4px 16px rgba(239,68,68,.3); }
+        .btn-danger { background: rgba(239,68,68,.12); color: var(--red); border: 1px solid rgba(239,68,68,.3); }
+        .btn-danger:hover { background: rgba(239,68,68,.2); }
+        .btn-amber { background: rgba(251,191,36,.12); color: var(--amber); border: 1px solid rgba(251,191,36,.3); }
+        .btn-amber:hover { background: rgba(251,191,36,.2); }
+        .btn-purple { background: rgba(167,139,250,.12); color: var(--purple); border: 1px solid rgba(167,139,250,.3); }
+        .btn-purple:hover { background: rgba(167,139,250,.2); }
+        .btn-green { background: rgba(74,222,128,.12); color: var(--green); border: 1px solid rgba(74,222,128,.3); }
+        .btn-green:hover { background: rgba(74,222,128,.2); }
+        .btn-ghost { background: var(--surface); color: var(--text); border: 1px solid var(--border); }
+        .btn-ghost:hover { background: var(--border); }
+
+        /* ── Severity Badges ─────────────────────────────────────── */
+        .badge { font-size: 9px; font-weight: 800; padding: 2px 7px; border-radius: 5px; letter-spacing: .8px; text-transform: uppercase; }
+        .badge-critical { background: rgba(239,68,68,.18); color: var(--red); border: 1px solid rgba(239,68,68,.35); }
+        .badge-high     { background: rgba(251,191,36,.15); color: var(--amber); border: 1px solid rgba(251,191,36,.3); }
+        .badge-medium   { background: rgba(167,139,250,.15); color: var(--purple); border: 1px solid rgba(167,139,250,.3); }
+        .badge-low      { background: rgba(74,222,128,.12); color: var(--green); border: 1px solid rgba(74,222,128,.25); }
+
+        /* ── Terminal / Log Feed ─────────────────────────────────── */
+        .terminal {
+            background: #060b12; border: 1px solid var(--border); border-radius: 12px;
+            padding: 14px; font-family: 'Fira Code', monospace; font-size: 11px;
+            overflow-y: auto; line-height: 1.7;
+        }
+        .log-entry { display: flex; justify-content: space-between; padding: 2px 0; border-bottom: 1px solid rgba(30,46,69,.5); }
+        .log-ok { color: var(--green); }
+        .log-err { color: var(--red); }
+        .log-warn { color: var(--amber); }
+        .log-ip { color: var(--accent); font-weight: 600; }
+        .empty-state { color: var(--muted); text-align: center; padding: 40px 20px; font-style: italic; }
+
+        /* Alert card */
+        .alert-card {
+            background: rgba(239,68,68,.07); border: 1px solid rgba(239,68,68,.25);
+            border-radius: 10px; padding: 10px 12px; margin-bottom: 6px;
+            animation: alertIn .3s ease;
+        }
+        .alert-card.high { background:rgba(251,191,36,.07); border-color:rgba(251,191,36,.25); }
+        .alert-card.medium { background:rgba(167,139,250,.07); border-color:rgba(167,139,250,.25); }
+        @keyframes alertIn { from{opacity:0;transform:translateY(-6px)} to{opacity:1;transform:translateY(0)} }
+
+        /* ── Code Syntax Highlight ───────────────────────────────── */
+        .code-block {
+            background: #060b12; border: 1px solid var(--border); border-radius: 12px;
+            overflow: hidden;
+        }
+        .code-header {
+            background: var(--surface); border-bottom: 1px solid var(--border);
+            padding: 8px 14px; display: flex; align-items: center; justify-content: space-between;
+        }
+        .code-lang { font-size: 10px; color: var(--muted); font-family: 'Fira Code',monospace; }
+        .code-dots { display: flex; gap: 5px; }
+        .code-dots span { width: 10px; height: 10px; border-radius: 50%; }
+        .code-dots .r { background: #ff5f56; } .code-dots .y { background: #ffbd2e; } .code-dots .g { background: #27c93f; }
+        .code-body { padding: 16px 18px; font-family: 'Fira Code', monospace; font-size: 11.5px; line-height: 1.8; overflow-x: auto; }
+        .code-body pre { white-space: pre; }
+        .kw { color: #c792ea; } .fn { color: #82aaff; } .str { color: #c3e88d; }
+        .cm { color: #546e7a; font-style: italic; } .num { color: #f78c6c; }
+        .cls { color: #ffcb6b; } .op { color: #89ddff; }
+
+        /* ── Pipeline Architecture Diagram ──────────────────────── */
+        .pipeline-stage {
+            background: var(--surface); border: 1px solid var(--border);
+            border-radius: 14px; padding: 18px; display: flex; flex-direction: column;
+            gap: 10px; transition: border-color .3s, transform .2s;
+        }
+        .pipeline-stage:hover { border-color: var(--border2); transform: translateY(-2px); }
+        .stage-num { font-size: 9px; font-weight: 800; letter-spacing: 2px; text-transform: uppercase; }
+        .stage-title { font-size: 13px; font-weight: 700; }
+        .stage-desc { font-size: 11px; color: var(--muted); line-height: 1.6; }
+        .stage-footer { font-size: 10px; color: var(--muted); border-top: 1px solid var(--border); padding-top: 8px; font-family: 'Fira Code',monospace; }
+        .arrow-right { display: flex; align-items: center; justify-content: center; color: var(--muted); font-size: 18px; }
+        @media(max-width:1024px) { .arrow-right { transform: rotate(90deg); } }
+
+        .pipeline-grid {
+            display: grid;
+            grid-template-columns: 1fr 24px 1fr 24px 1fr 24px 1fr;
+            gap: 8px; align-items: center;
+        }
+        @media(max-width:1024px){
+            .pipeline-grid { grid-template-columns: 1fr; }
+            .arrow-right { display: none; }
+        }
+
+        /* ── Execution Guide Steps ───────────────────────────────── */
+        .step-card {
+            background: var(--surface); border: 1px solid var(--border);
+            border-radius: 14px; padding: 20px; display: flex; gap: 16px;
+        }
+        .step-num {
+            width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center;
+            font-size: 14px; font-weight: 800; flex-shrink: 0;
+        }
+        .step-title { font-size: 14px; font-weight: 700; margin-bottom: 6px; }
+        .step-desc { font-size: 12px; color: var(--muted); line-height: 1.65; }
+        .cmd-block {
+            background: #060b12; border: 1px solid var(--border); border-radius: 8px;
+            padding: 10px 14px; font-family: 'Fira Code', monospace; font-size: 11px;
+            color: #a8ff78; margin-top: 10px; position: relative; overflow-x: auto;
+        }
+        .cmd-block .comment { color: #546e7a; }
+        .copy-btn {
+            position: absolute; top: 6px; right: 6px;
+            background: var(--border2); border: none; color: var(--muted);
+            border-radius: 5px; padding: 3px 8px; cursor: pointer; font-size: 10px;
+            font-family: 'Inter', sans-serif; font-weight: 600;
+            transition: background .2s;
+        }
+        .copy-btn:hover { background: var(--border); color: var(--text); }
+
+        /* ── Hive Forensics ──────────────────────────────────────── */
+        .sql-editor {
+            background: #060b12; border: 1px solid var(--border); border-radius: 10px;
+            padding: 12px 14px; font-family: 'Fira Code', monospace; font-size: 11.5px;
+            color: #c3e88d; resize: vertical; min-height: 70px; width: 100%;
+            outline: none;
+        }
+        .sql-editor:focus { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(34,211,238,.15); }
+
+        table.results { width: 100%; border-collapse: collapse; font-size: 11px; }
+        table.results thead tr { border-bottom: 1px solid var(--border); }
+        table.results th { color: var(--amber); font-family: 'Fira Code',monospace; padding: 6px 8px; text-align: left; font-weight: 600; font-size: 10px; text-transform: uppercase; }
+        table.results td { padding: 6px 8px; color: var(--text); border-bottom: 1px solid rgba(30,46,69,.5); }
+        table.results tr:hover td { background: rgba(255,255,255,.02); }
+
+        /* ── Hero Banner ─────────────────────────────────────────── */
+        .hero {
+            background: linear-gradient(135deg, #0c1930 0%, #111827 60%, #0c1930 100%);
+            border: 1px solid var(--border); border-radius: 20px; padding: 36px;
+            position: relative; overflow: hidden; margin-bottom: 20px;
+        }
+        .hero::before {
+            content: ''; position: absolute; width: 400px; height: 400px;
+            background: radial-gradient(circle, rgba(14,165,233,.12) 0%, transparent 70%);
+            top: -100px; right: -100px; pointer-events: none;
+        }
+        .hero::after {
+            content: ''; position: absolute; width: 300px; height: 300px;
+            background: radial-gradient(circle, rgba(99,102,241,.1) 0%, transparent 70%);
+            bottom: -80px; left: -80px; pointer-events: none;
+        }
+        .hero-tag { font-size: 10px; font-weight: 800; letter-spacing: 2.5px; text-transform: uppercase; color: var(--accent); margin-bottom: 10px; }
+        .hero h1 { font-size: clamp(22px,4vw,38px); font-weight: 800; line-height: 1.2; max-width: 680px; }
+        .hero h1 span { background: linear-gradient(90deg,#38bdf8,#818cf8); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .hero-desc { font-size: 13px; color: var(--muted); max-width: 620px; margin-top: 10px; line-height: 1.7; }
+        .hero-btns { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 20px; }
+        .tech-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 18px; }
+        .chip { font-size: 10px; padding: 4px 10px; border-radius: 6px; font-weight: 600; font-family: 'Fira Code',monospace; border: 1px solid; }
+        .chip-blue { color: #7dd3fc; border-color: rgba(125,211,252,.25); background: rgba(125,211,252,.07); }
+        .chip-orange { color: #fdba74; border-color: rgba(253,186,116,.25); background: rgba(253,186,116,.07); }
+        .chip-yellow { color: #fde68a; border-color: rgba(253,230,138,.25); background: rgba(253,230,138,.07); }
+        .chip-purple { color: #c4b5fd; border-color: rgba(196,181,253,.25); background: rgba(196,181,253,.07); }
+        .chip-green { color: #86efac; border-color: rgba(134,239,172,.25); background: rgba(134,239,172,.07); }
+
+        /* ── Simulator controls ──────────────────────────────────── */
+        .sim-bar {
+            background: var(--card); border: 1px solid var(--border); border-radius: 16px;
+            padding: 16px 20px; display: flex; flex-wrap: wrap; align-items: center;
+            justify-content: space-between; gap: 12px; margin-bottom: 16px;
+        }
+        .sim-attacks { display: flex; flex-wrap: wrap; gap: 8px; }
+        .sim-stats { display: flex; gap: 20px; font-size: 12px; font-family: 'Fira Code',monospace; }
+        .sim-stat-label { color: var(--muted); }
+        .sim-stat-val { font-weight: 700; }
+
+        /* Gauge donut */
+        .gauge-wrap { position: relative; width: 100px; }
+        .gauge-center { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 10px; color: var(--muted); }
+        .gauge-big { font-size: 18px; font-weight: 800; color: var(--text); }
+
+        /* Tabs (inner section) */
+        .inner-tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--border); padding-bottom: 0; margin-bottom: 16px; }
+        .inner-tab { padding: 8px 14px; font-size: 11px; font-weight: 600; color: var(--muted); cursor: pointer; border-bottom: 2px solid transparent; transition: all .2s; background: none; border-top: none; border-left: none; border-right: none; font-family: 'Inter',sans-serif; }
+        .inner-tab:hover { color: var(--text); }
+        .inner-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+        /* Threat heatmap */
+        .heatmap-grid { display: grid; grid-template-columns: repeat(8,1fr); gap: 4px; }
+        .heat-cell {
+            aspect-ratio: 1; border-radius: 4px; transition: transform .15s;
+            cursor: default;
+        }
+        .heat-cell:hover { transform: scale(1.2); }
+
+        /* ── Footer ──────────────────────────────────────────────── */
+        footer {
+            border-top: 1px solid var(--border); background: var(--surface);
+            padding: 16px 0; margin-top: 40px; text-align: center;
+            font-size: 11px; color: var(--muted);
+        }
+
+        /* ── Misc Utilities ──────────────────────────────────────── */
+        .text-accent { color: var(--accent); }
+        .text-green  { color: var(--green); }
+        .text-red    { color: var(--red); }
+        .text-amber  { color: var(--amber); }
+        .text-purple { color: var(--purple); }
+        .text-muted  { color: var(--muted); }
+        .text-right  { text-align: right; }
+        .fw-700      { font-weight: 700; }
+        .fw-800      { font-weight: 800; }
+        .mt-4        { margin-top: 4px; }
+        .mt-8        { margin-top: 8px; }
+        .mt-12       { margin-top: 12px; }
+        .mt-16       { margin-top: 16px; }
+        .mt-20       { margin-top: 20px; }
+        .mb-16       { margin-bottom: 16px; }
+        .gap-12      { gap: 12px; }
+        .flex        { display: flex; }
+        .flex-col    { flex-direction: column; }
+        .items-center { align-items: center; }
+        .justify-between { justify-content: space-between; }
+        .gap-8       { gap: 8px; }
+        .gap-6       { gap: 6px; }
+        .w-full      { width: 100%; }
+        .h-full      { height: 100%; }
+        .overflow-hidden { overflow: hidden; }
+        .relative    { position: relative; }
+        .space-y-12 > *+* { margin-top: 12px; }
+        .space-y-16 > *+* { margin-top: 16px; }
+        .space-y-20 > *+* { margin-top: 20px; }
+        hr.divider { border: none; border-top: 1px solid var(--border); margin: 24px 0; }
+        .rounded-full { border-radius: 9999px; }
+
+        .glow-cyan { box-shadow: 0 0 20px rgba(34,211,238,.18); }
+        .glow-red  { box-shadow: 0 0 20px rgba(248,113,113,.25); }
+
+        /* Animated border on active stream */
+        @keyframes borderSpin {
+            0% { background-position: 0% 50%; }
+            100% { background-position: 200% 50%; }
+        }
+        .streaming-active {
+            animation: borderSpin 2s linear infinite;
+        }
+
+        /* Rubric table */
+        .rubric-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+        .rubric-table th { text-align: left; padding: 8px 10px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); border-bottom: 1px solid var(--border); }
+        .rubric-table td { padding: 8px 10px; border-bottom: 1px solid rgba(30,46,69,.5); vertical-align: top; }
+        .rubric-pts { font-family: 'Fira Code',monospace; font-weight: 700; color: var(--accent); font-size: 14px; }
+
+        /* Detection algo cards */
+        .algo-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 16px; }
+        .algo-title { font-size: 12px; font-weight: 700; margin-bottom: 6px; }
+        .algo-formula { font-family: 'Fira Code',monospace; font-size: 10px; color: var(--accent); background: rgba(34,211,238,.06); border: 1px solid rgba(34,211,238,.15); border-radius: 6px; padding: 6px 10px; margin: 8px 0; }
+        .algo-desc { font-size: 11px; color: var(--muted); line-height: 1.65; }
+
+        /* Mobile nav */
+        .mobile-nav { display: none; padding: 8px 16px; gap: 6px; overflow-x: auto; background: var(--surface); border-bottom: 1px solid var(--border); }
+        .mobile-nav button { font-size: 11px; padding: 5px 12px; border-radius: 8px; background: var(--card); border: 1px solid var(--border); color: var(--text); cursor: pointer; white-space: nowrap; font-family: 'Inter',sans-serif; font-weight: 600; }
+        @media(max-width:640px) { .mobile-nav { display: flex; } }
+    </style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════════════
+     HEADER
+═══════════════════════════════════════════════════════ -->
+<header>
+  <div class="container">
+    <div class="header-inner">
+      <div class="logo">
+        <div class="logo-icon"><i class="fa-solid fa-shield-halved"></i></div>
+        <div class="logo-text">
+          <div class="logo-label">CSE412 · Applied Big Data</div>
+          <div class="logo-title">API Threat Detection Platform</div>
+        </div>
+      </div>
+
+      <nav id="main-nav">
+        <button class="nav-btn active" onclick="showTab('overview')" id="tab-overview">
+          <i class="fa-solid fa-compass"></i> Blueprint
+        </button>
+        <button class="nav-btn" onclick="showTab('architecture')" id="tab-architecture">
+          <i class="fa-solid fa-sitemap"></i> Architecture
+        </button>
+        <button class="nav-btn" onclick="showTab('simulator')" id="tab-simulator">
+          <i class="fa-solid fa-bolt"></i> Live Simulator
+        </button>
+        <button class="nav-btn" onclick="showTab('code')" id="tab-code">
+          <i class="fa-solid fa-code"></i> Code
+        </button>
+        <button class="nav-btn" onclick="showTab('guide')" id="tab-guide">
+          <i class="fa-solid fa-terminal"></i> Startup Guide
+        </button>
+        <button class="nav-btn" onclick="showTab('report')" id="tab-report">
+          <i class="fa-solid fa-file-lines"></i> Report
+        </button>
+      </nav>
+
+      <div class="badge-live">
+        <span class="dot-pulse"></span> Track D Pipeline
+      </div>
+    </div>
+  </div>
+</header>
+
+<!-- Mobile nav -->
+<div class="mobile-nav">
+  <button onclick="showTab('overview')">Blueprint</button>
+  <button onclick="showTab('architecture')">Architecture</button>
+  <button onclick="showTab('simulator')">Simulator</button>
+  <button onclick="showTab('code')">Code</button>
+  <button onclick="showTab('guide')">Startup</button>
+  <button onclick="showTab('report')">Report</button>
+</div>
+
+<main class="container">
+
+<!-- ═══════════════════════════════════════════════════════
+     TAB 1: BLUEPRINT / OVERVIEW
+═══════════════════════════════════════════════════════ -->
+<div id="panel-overview" class="tab-panel active">
+
+  <!-- Hero -->
+  <div class="hero">
+    <div class="hero-tag"><i class="fa-solid fa-microchip mr-1"></i> Course Project · Big Data Track D</div>
+    <h1>Real-Time API Threat &amp; <span>Anomaly Detection</span> Pipeline</h1>
+    <p class="hero-desc">
+      End-to-end distributed streaming security analytics platform ingesting
+      <strong>1,000–10,000+ API events/sec</strong> through Apache Kafka, applying stateful
+      <strong>60-second sliding-window</strong> anomaly detection in Apache Spark Structured Streaming,
+      and persisting raw and enriched security events to Apache Hive on HDFS for SQL forensics.
+    </p>
+    <div class="hero-btns">
+      <button class="btn btn-primary" onclick="showTab('simulator')"><i class="fa-solid fa-play"></i> Launch Live Simulator</button>
+      <button class="btn btn-ghost" onclick="showTab('guide')"><i class="fa-solid fa-terminal"></i> View Startup Guide</button>
+      <button class="btn btn-ghost" onclick="showTab('architecture')"><i class="fa-solid fa-diagram-project"></i> Architecture</button>
+    </div>
+    <div class="tech-chips">
+      <span class="chip chip-blue"><i class="fa-brands fa-python mr-1"></i> Python 3.10</span>
+      <span class="chip chip-blue">Apache Kafka 3.4</span>
+      <span class="chip chip-orange">Apache Spark 3.4</span>
+      <span class="chip chip-yellow">Apache Hive 2.3</span>
+      <span class="chip chip-yellow">HDFS 3.2</span>
+      <span class="chip chip-purple">Isolation Forest ML</span>
+      <span class="chip chip-green">FastAPI + SSE</span>
+      <span class="chip chip-green">Docker Compose</span>
+    </div>
+  </div>
+
+  <!-- Stats Row -->
+  <div class="grid4 mb-16">
+    <div class="stat-card">
+      <div class="stat-icon" style="background:rgba(14,165,233,.12);color:#38bdf8;"><i class="fa-solid fa-bolt"></i></div>
+      <div>
+        <div class="stat-val text-accent">10K+</div>
+        <div class="stat-label">API events / sec ingested</div>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon" style="background:rgba(251,191,36,.1);color:var(--amber);"><i class="fa-solid fa-clock"></i></div>
+      <div>
+        <div class="stat-val text-amber">60s / 10s</div>
+        <div class="stat-label">Sliding window / slide</div>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon" style="background:rgba(167,139,250,.1);color:var(--purple);"><i class="fa-solid fa-brain"></i></div>
+      <div>
+        <div class="stat-val text-purple">5+1</div>
+        <div class="stat-label">Detection engines (rule + ML)</div>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon" style="background:rgba(74,222,128,.1);color:var(--green);"><i class="fa-solid fa-database"></i></div>
+      <div>
+        <div class="stat-val text-green">Dual</div>
+        <div class="stat-label">HDFS Parquet + Hive ORC sinks</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid2 gap-12">
+    <!-- Problem Statement -->
+    <div class="card">
+      <div class="card-title"><i class="fa-solid fa-triangle-exclamation text-red"></i> Problem Statement</div>
+      <p style="font-size:12px;color:var(--muted);line-height:1.7;margin-bottom:12px;">
+        Modern cloud APIs receive millions of requests per minute. Traditional batch or single-node systems fail at:
+      </p>
+      <div class="space-y-12">
+        <div style="display:flex;gap:10px;font-size:12px;">
+          <i class="fa-solid fa-xmark text-red mt-4"></i>
+          <div><strong>High Data Velocity:</strong> <span style="color:var(--muted)">Single-node tools hit CPU/memory exhaustion at 10K+ req/sec.</span></div>
+        </div>
+        <div style="display:flex;gap:10px;font-size:12px;">
+          <i class="fa-solid fa-xmark text-red mt-4"></i>
+          <div><strong>Stream-Batch Duality:</strong> <span style="color:var(--muted)">Inability to simultaneously compute ultra-low-latency windowed stats AND keep full historical logs for audits.</span></div>
+        </div>
+        <div style="display:flex;gap:10px;font-size:12px;">
+          <i class="fa-solid fa-xmark text-red mt-4"></i>
+          <div><strong>Blind Spot Detection:</strong> <span style="color:var(--muted)">Rule-only systems miss subtle multi-dimensional anomalies (e.g. elevated payload + moderate rate).</span></div>
+        </div>
+        <div style="display:flex;gap:10px;font-size:12px;">
+          <i class="fa-solid fa-check text-green mt-4"></i>
+          <div><strong>Solution:</strong> <span style="color:var(--muted)">Kafka → Spark Structured Streaming → Hive/HDFS end-to-end distributed pipeline with hybrid rule + Isolation Forest ML detection.</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Rubric Mapping -->
+    <div class="card">
+      <div class="card-title" style="justify-content:space-between;">
+        <span><i class="fa-solid fa-award text-accent"></i> CSE412 Rubric Mapping</span>
+        <span style="font-size:10px;font-family:'Fira Code',monospace;color:var(--accent);background:rgba(34,211,238,.08);border:1px solid rgba(34,211,238,.2);padding:3px 8px;border-radius:6px;">20/20 PTS Target</span>
+      </div>
+      <table class="rubric-table">
+        <thead>
+          <tr><th>Category</th><th>Pts</th><th>Implementation</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="fw-700">Proposal &amp; Plan</td>
+            <td class="rubric-pts">2</td>
+            <td style="font-size:11px;color:var(--muted)">Defined DDoS/Brute-force scope, tool selection rationale, architecture diagram</td>
+          </tr>
+          <tr>
+            <td class="fw-700">Implementation</td>
+            <td class="rubric-pts">7</td>
+            <td style="font-size:11px;color:var(--muted)">Kafka → PySpark Streaming → HDFS/Hive ORC complete data flow</td>
+          </tr>
+          <tr>
+            <td class="fw-700">Analytical Quality</td>
+            <td class="rubric-pts">3</td>
+            <td style="font-size:11px;color:var(--muted)">60s sliding window aggregations, Z-score statistical detection + IF ML</td>
+          </tr>
+          <tr>
+            <td class="fw-700">Demo Execution</td>
+            <td class="rubric-pts">3</td>
+            <td style="font-size:11px;color:var(--muted)">Live stream simulation + instantaneous Hive query verification</td>
+          </tr>
+          <tr>
+            <td class="fw-700">Documentation</td>
+            <td class="rubric-pts">3</td>
+            <td style="font-size:11px;color:var(--muted)">Docker configs, architecture diagrams, full source with comments</td>
+          </tr>
+          <tr>
+            <td class="fw-700">Presentation / Q&amp;A</td>
+            <td class="rubric-pts">2</td>
+            <td style="font-size:11px;color:var(--muted)">10-min script + technical design defense</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Team Allocation -->
+  <div class="card mt-16">
+    <div class="card-title"><i class="fa-solid fa-users text-green"></i> Team Role &amp; Task Allocation</div>
+    <div class="grid3 mt-8 gap-12">
+      <div class="algo-card">
+        <div style="font-size:9px;font-weight:800;letter-spacing:2px;text-transform:uppercase;color:var(--accent);margin-bottom:6px;">Student 1 · Ingestion Lead</div>
+        <div class="algo-title">Kafka &amp; Log Simulation</div>
+        <div class="algo-desc">Deploys Kafka broker, configures <code>api-raw-logs</code> topic (3 partitions, IP-keyed), authors the multi-threaded synthetic log generator simulating normal vs attack traffic at 1K+ events/sec.</div>
+        <div style="margin-top:10px;font-size:10px;font-family:'Fira Code',monospace;color:var(--muted)">Files: producer/*.py · config/kafka.yaml</div>
+      </div>
+      <div class="algo-card">
+        <div style="font-size:9px;font-weight:800;letter-spacing:2px;text-transform:uppercase;color:var(--amber);margin-bottom:6px;">Student 2 · Analytics Lead</div>
+        <div class="algo-title">Spark Structured Streaming</div>
+        <div class="algo-desc">Develops PySpark streaming pipeline, defines 60s / 10s sliding window aggregations, implements DDoS/BruteForce/EndpointAbuse detectors, Isolation Forest ML, and watermarking for late-data tolerance.</div>
+        <div style="margin-top:10px;font-size:10px;font-family:'Fira Code',monospace;color:var(--muted)">Files: spark/streaming_job.py · detection/*.py</div>
+      </div>
+      <div class="algo-card">
+        <div style="font-size:9px;font-weight:800;letter-spacing:2px;text-transform:uppercase;color:var(--purple);margin-bottom:6px;">Student 3 · Storage Lead</div>
+        <div class="algo-title">Hive Warehouse &amp; Demo</div>
+        <div class="algo-desc">Configures HDFS Parquet sinks and Hive metastore ORC tables. Authors 10+ forensic SQL queries for post-incident threat reporting and orchestrates the live demo flow.</div>
+        <div style="margin-top:10px;font-size:10px;font-family:'Fira Code',monospace;color:var(--muted)">Files: hive/*.sql · dashboard/app.py</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Detection Algorithms Overview -->
+  <div class="card mt-16">
+    <div class="card-title"><i class="fa-solid fa-brain text-purple"></i> Hybrid Detection Algorithm Overview</div>
+    <div class="grid2 gap-12 mt-8">
+      <div>
+        <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;">Rule-Based Detectors</div>
+        <div class="space-y-12">
+          <div class="algo-card">
+            <div class="algo-title"><i class="fa-solid fa-burst text-red mr-1"></i> DDoS Flood Detection</div>
+            <div class="algo-formula">total_requests &gt; 100 / 60s window → DDoS_ATTACK (CRITICAL)</div>
+            <div class="algo-desc">Counts raw request volume per client IP per sliding window. Thresholds configurable in <code>config/anomaly_thresholds.json</code>.</div>
+          </div>
+          <div class="algo-card">
+            <div class="algo-title"><i class="fa-solid fa-key text-amber mr-1"></i> Brute-Force Auth Detection</div>
+            <div class="algo-formula">failed_logins (HTTP 401) &gt; 10 / 60s → BRUTE_FORCE (HIGH)</div>
+            <div class="algo-desc">Aggregates HTTP 401 responses per IP. A sudden spike reveals automated credential stuffing or dictionary attacks.</div>
+          </div>
+          <div class="algo-card">
+            <div class="algo-title"><i class="fa-solid fa-server text-purple mr-1"></i> Endpoint Abuse &amp; Error Spike</div>
+            <div class="algo-formula">hits &gt; 50 AND avg_resp &gt; 1000ms → ENDPOINT_ABUSE</div>
+            <div class="algo-desc">Detects resource exhaustion on heavy endpoints and 5XX error rate spikes (&gt;20%) indicative of DDoS or backend exploits.</div>
+          </div>
+        </div>
+      </div>
+      <div>
+        <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;">Machine Learning — Isolation Forest</div>
+        <div class="algo-card" style="margin-bottom:12px;">
+          <div class="algo-title"><i class="fa-solid fa-tree text-green mr-1"></i> Isolation Forest (sklearn)</div>
+          <div class="algo-formula">score = 0.5 − score_samples(X) → anomaly if score &gt; 0.65</div>
+          <div class="algo-desc">Feature vector: [total_requests, failed_logins, error_5xx_count, avg_response_time, total_bytes]. Pre-seeded on 500 synthetic normal-traffic samples. Contamination=0.05 (5% expected anomaly rate).</div>
+        </div>
+        <div class="algo-card" style="margin-bottom:12px;">
+          <div class="algo-title"><i class="fa-solid fa-chart-area text-accent mr-1"></i> Z-Score Statistical Baseline</div>
+          <div class="algo-formula">Z = (x − μ) / σ  →  anomaly if |Z| &gt; 3.0</div>
+          <div class="algo-desc">Computes per-IP per-endpoint Z-score against rolling 30-sample baseline mean/stddev. Catches gradual ramp-up attacks missed by fixed thresholds.</div>
+        </div>
+        <div class="algo-card">
+          <div class="algo-title"><i class="fa-solid fa-layer-group text-amber mr-1"></i> Payload Exfiltration Detection</div>
+          <div class="algo-formula">total_bytes &gt; 10 MB / window → PAYLOAD_EXFILTRATION (HIGH)</div>
+          <div class="algo-desc">Catches large-response data extraction patterns from authenticated endpoints — common in APT exfiltration stages.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════════
+     TAB 2: ARCHITECTURE
+═══════════════════════════════════════════════════════ -->
+<div id="panel-architecture" class="tab-panel">
+
+  <div class="card mb-16">
+    <div class="flex items-center justify-between mb-16">
+      <div>
+        <div style="font-size:18px;font-weight:800;">End-to-End Pipeline Architecture</div>
+        <div style="font-size:12px;color:var(--muted);margin-top:4px;">Real-time event streaming, stateful micro-batching, and dual-sink storage</div>
+      </div>
+      <div class="flex gap-8" style="flex-wrap:wrap;">
+        <span class="chip chip-blue">Kafka 3.4</span>
+        <span class="chip chip-orange">Spark 3.4.0</span>
+        <span class="chip chip-yellow">Hive 2.3 / HDFS</span>
+      </div>
+    </div>
+
+    <!-- Pipeline stages -->
+    <div class="pipeline-grid">
+      <!-- Stage 1 -->
+      <div class="pipeline-stage">
+        <div class="stage-num" style="color:#38bdf8;">Stage 1</div>
+        <div style="font-size:20px;color:#38bdf8;"><i class="fa-solid fa-server"></i></div>
+        <div class="stage-title">Log Producer (Python)</div>
+        <div class="stage-desc">
+          Generates <strong>1,000–10,000 API log events/sec</strong> using multi-threaded
+          <code>LogProducerManager</code>. Injects 5 attack scenarios:
+          DDoS, Brute-Force, Endpoint Abuse, Error Spike, Payload Exfiltration.
+        </div>
+        <div class="stage-footer">Output: JSON → Kafka TCP | Key: client_ip</div>
+      </div>
+      <div class="arrow-right"><i class="fa-solid fa-arrow-right"></i></div>
+
+      <!-- Stage 2 -->
+      <div class="pipeline-stage">
+        <div class="stage-num" style="color:#7dd3fc;">Stage 2</div>
+        <div style="font-size:20px;color:#7dd3fc;"><i class="fa-solid fa-network-wired"></i></div>
+        <div class="stage-title">Apache Kafka Broker</div>
+        <div class="stage-desc">
+          Topic <code>api-raw-logs</code> with <strong>3 partitions</strong>, Replication Factor 1.
+          IP-keyed messages guarantee per-client ordering. Retention: 24h.
+          Dead-letter topic: <code>api-logs-dead-letter</code>.
+        </div>
+        <div class="stage-footer">Throughput: 100K msg/s | Lag monitoring via JMX</div>
+      </div>
+      <div class="arrow-right"><i class="fa-solid fa-arrow-right"></i></div>
+
+      <!-- Stage 3 -->
+      <div class="pipeline-stage">
+        <div class="stage-num" style="color:#fdba74;">Stage 3</div>
+        <div style="font-size:20px;color:#fdba74;"><i class="fa-solid fa-bolt"></i></div>
+        <div class="stage-title">Spark Structured Streaming</div>
+        <div class="stage-desc">
+          PySpark 3.4 consumes Kafka topic. Applies <strong>60s window / 10s slide</strong>
+          aggregations per client_ip. Watermark: 10 min late-data tolerance.
+          Runs rule-based detectors + Isolation Forest ML per micro-batch.
+        </div>
+        <div class="stage-footer">Trigger: ProcessingTime 10s | Output: Append Mode</div>
+      </div>
+      <div class="arrow-right"><i class="fa-solid fa-arrow-right"></i></div>
+
+      <!-- Stage 4 -->
+      <div class="pipeline-stage">
+        <div class="stage-num" style="color:#fde68a;">Stage 4</div>
+        <div style="font-size:20px;color:#fde68a;"><i class="fa-solid fa-database"></i></div>
+        <div class="stage-title">Hive / HDFS Sinks</div>
+        <div class="stage-desc">
+          <strong>Dual sinks:</strong><br>
+          1. Raw logs → HDFS Snappy <strong>Parquet</strong> partitioned by <code>dt</code>.<br>
+          2. Alerts → Hive <strong>ORC</strong> table <code>api_security.threat_alerts</code>
+             for ultra-fast column-pruned SQL forensic queries.
+        </div>
+        <div class="stage-footer">Format: ORC (alerts) + Parquet (raw) | Partition: dt</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Data Flow Detail -->
+  <div class="grid2 gap-12">
+    <div class="card">
+      <div class="card-title"><i class="fa-solid fa-arrow-right-arrow-left text-accent"></i> Kafka Topic Design</div>
+      <div class="space-y-12" style="font-size:12px;">
+        <div style="display:flex;justify-content:space-between;border-bottom:1px solid var(--border);padding-bottom:8px;">
+          <span style="color:var(--muted);">Topic Name</span>
+          <code style="color:var(--accent);">api-raw-logs</code>
+        </div>
+        <div style="display:flex;justify-content:space-between;border-bottom:1px solid var(--border);padding-bottom:8px;">
+          <span style="color:var(--muted);">Partitions</span>
+          <span class="fw-700">3</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;border-bottom:1px solid var(--border);padding-bottom:8px;">
+          <span style="color:var(--muted);">Replication Factor</span>
+          <span class="fw-700">1 (single-broker demo)</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;border-bottom:1px solid var(--border);padding-bottom:8px;">
+          <span style="color:var(--muted);">Partitioning Key</span>
+          <code style="color:var(--green);">client_ip</code>
+        </div>
+        <div style="display:flex;justify-content:space-between;border-bottom:1px solid var(--border);padding-bottom:8px;">
+          <span style="color:var(--muted);">Message Format</span>
+          <span>JSON (UTF-8)</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;">
+          <span style="color:var(--muted);">Retention</span>
+          <span>24 Hours</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title"><i class="fa-solid fa-file-code text-amber"></i> Spark Window Config</div>
+      <div class="space-y-12" style="font-size:12px;">
+        <div style="display:flex;justify-content:space-between;border-bottom:1px solid var(--border);padding-bottom:8px;">
+          <span style="color:var(--muted);">Window Duration</span>
+          <code style="color:var(--amber);">60 seconds</code>
+        </div>
+        <div style="display:flex;justify-content:space-between;border-bottom:1px solid var(--border);padding-bottom:8px;">
+          <span style="color:var(--muted);">Slide Interval</span>
+          <code style="color:var(--amber);">10 seconds</code>
+        </div>
+        <div style="display:flex;justify-content:space-between;border-bottom:1px solid var(--border);padding-bottom:8px;">
+          <span style="color:var(--muted);">Watermark (Late Data)</span>
+          <span>10 minutes</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;border-bottom:1px solid var(--border);padding-bottom:8px;">
+          <span style="color:var(--muted);">Trigger</span>
+          <span>ProcessingTime("10 seconds")</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;border-bottom:1px solid var(--border);padding-bottom:8px;">
+          <span style="color:var(--muted);">GroupBy</span>
+          <code style="color:var(--accent);">window, client_ip</code>
+        </div>
+        <div style="display:flex;justify-content:space-between;">
+          <span style="color:var(--muted);">Shuffle Partitions</span>
+          <span>3</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Docker Services -->
+  <div class="card mt-16">
+    <div class="card-title"><i class="fa-brands fa-docker text-blue-400"></i> Docker Compose Service Map</div>
+    <div class="grid4 mt-8 gap-12">
+      <div class="algo-card text-center">
+        <div style="font-size:22px;color:#7dd3fc;margin-bottom:6px;"><i class="fa-solid fa-network-wired"></i></div>
+        <div style="font-weight:700;font-size:12px;">Zookeeper</div>
+        <div style="font-size:10px;color:var(--muted);margin-top:4px;">Port 2181<br>Kafka coordination</div>
+      </div>
+      <div class="algo-card text-center">
+        <div style="font-size:22px;color:#38bdf8;margin-bottom:6px;"><i class="fa-solid fa-cube"></i></div>
+        <div style="font-weight:700;font-size:12px;">Kafka Broker</div>
+        <div style="font-size:10px;color:var(--muted);margin-top:4px;">Port 9092/29092<br>confluentinc/cp-kafka:7.4.0</div>
+      </div>
+      <div class="algo-card text-center">
+        <div style="font-size:22px;color:#fde68a;margin-bottom:6px;"><i class="fa-solid fa-server"></i></div>
+        <div style="font-weight:700;font-size:12px;">HDFS NameNode</div>
+        <div style="font-size:10px;color:var(--muted);margin-top:4px;">Port 9870 (UI), 9000<br>bde2020/hadoop 3.2.1</div>
+      </div>
+      <div class="algo-card text-center">
+        <div style="font-size:22px;color:#fde68a;margin-bottom:6px;"><i class="fa-solid fa-hard-drive"></i></div>
+        <div style="font-weight:700;font-size:12px;">HDFS DataNode</div>
+        <div style="font-size:10px;color:var(--muted);margin-top:4px;">Port 9864<br>bde2020/hadoop 3.2.1</div>
+      </div>
+      <div class="algo-card text-center">
+        <div style="font-size:22px;color:#fdba74;margin-bottom:6px;"><i class="fa-solid fa-bolt"></i></div>
+        <div style="font-weight:700;font-size:12px;">Spark Master</div>
+        <div style="font-size:10px;color:var(--muted);margin-top:4px;">Port 8080 (UI), 7077<br>bde2020/spark-master 3.0.0</div>
+      </div>
+      <div class="algo-card text-center">
+        <div style="font-size:22px;color:#fb923c;margin-bottom:6px;"><i class="fa-solid fa-gears"></i></div>
+        <div style="font-weight:700;font-size:12px;">Spark Worker</div>
+        <div style="font-size:10px;color:var(--muted);margin-top:4px;">Port 8081<br>bde2020/spark-worker 3.0.0</div>
+      </div>
+      <div class="algo-card text-center">
+        <div style="font-size:22px;color:#c4b5fd;margin-bottom:6px;"><i class="fa-solid fa-database"></i></div>
+        <div style="font-weight:700;font-size:12px;">Hive Metastore</div>
+        <div style="font-size:10px;color:var(--muted);margin-top:4px;">Internal<br>PostgreSQL metastore</div>
+      </div>
+      <div class="algo-card text-center">
+        <div style="font-size:22px;color:#4ade80;margin-bottom:6px;"><i class="fa-solid fa-shield-halved"></i></div>
+        <div style="font-weight:700;font-size:12px;">Dashboard</div>
+        <div style="font-size:10px;color:var(--muted);margin-top:4px;">Port 8000<br>FastAPI + Uvicorn</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════════
+     TAB 3: LIVE SIMULATOR
+═══════════════════════════════════════════════════════ -->
+<div id="panel-simulator" class="tab-panel">
+
+  <!-- Control Bar -->
+  <div class="sim-bar">
+    <div class="flex items-center gap-12 flex-wrap">
+      <button class="btn btn-primary" id="stream-toggle-btn" onclick="toggleStream()">
+        <i class="fa-solid fa-play" id="stream-icon"></i>
+        <span id="stream-label">Start Stream Simulation</span>
+      </button>
+      <div class="sim-attacks">
+        <button class="btn btn-danger" onclick="triggerAttack('ddos')"><i class="fa-solid fa-burst"></i> DDoS</button>
+        <button class="btn btn-amber" onclick="triggerAttack('bruteforce')"><i class="fa-solid fa-key"></i> Brute Force</button>
+        <button class="btn btn-purple" onclick="triggerAttack('abuse')"><i class="fa-solid fa-server"></i> Endpoint Abuse</button>
+        <button class="btn btn-green" onclick="triggerAttack('errors')"><i class="fa-solid fa-triangle-exclamation"></i> Error Spike</button>
+        <button class="btn btn-ghost" onclick="triggerAttack('payload')"><i class="fa-solid fa-file-export"></i> Payload Exfil</button>
+      </div>
+    </div>
+    <div class="sim-stats">
+      <div><span class="sim-stat-label">Status: </span><span class="sim-stat-val" id="sim-status" style="color:var(--muted)">IDLE</span></div>
+      <div><span class="sim-stat-label">Events: </span><span class="sim-stat-val text-accent" id="sim-events">0</span></div>
+      <div><span class="sim-stat-label">Alerts: </span><span class="sim-stat-val text-red" id="sim-alerts">0</span></div>
+      <button class="btn btn-ghost" style="font-size:10px;padding:5px 10px;" onclick="resetSim()"><i class="fa-solid fa-rotate-right"></i> Reset</button>
+    </div>
+  </div>
+
+  <!-- Severity Summary Row -->
+  <div class="grid4 mb-16">
+    <div class="stat-card" style="border-color:rgba(239,68,68,.25);">
+      <div class="stat-icon" style="background:rgba(239,68,68,.1);color:var(--red);"><i class="fa-solid fa-fire"></i></div>
+      <div><div class="stat-val text-red" id="cnt-critical">0</div><div class="stat-label">Critical Alerts</div></div>
+    </div>
+    <div class="stat-card" style="border-color:rgba(251,191,36,.2);">
+      <div class="stat-icon" style="background:rgba(251,191,36,.1);color:var(--amber);"><i class="fa-solid fa-exclamation-triangle"></i></div>
+      <div><div class="stat-val text-amber" id="cnt-high">0</div><div class="stat-label">High Alerts</div></div>
+    </div>
+    <div class="stat-card" style="border-color:rgba(167,139,250,.2);">
+      <div class="stat-icon" style="background:rgba(167,139,250,.1);color:var(--purple);"><i class="fa-solid fa-circle-exclamation"></i></div>
+      <div><div class="stat-val text-purple" id="cnt-medium">0</div><div class="stat-label">Medium Alerts</div></div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon" style="background:rgba(74,222,128,.08);color:var(--green);"><i class="fa-solid fa-check-circle"></i></div>
+      <div><div class="stat-val text-green" id="cnt-low">0</div><div class="stat-label">Low / Normal</div></div>
+    </div>
+  </div>
+
+  <!-- Main 3-column simulator -->
+  <div class="grid3 gap-12" style="margin-bottom:16px;">
+    <!-- Kafka Feed -->
+    <div class="card flex-col" style="height:360px;">
+      <div class="card-title" style="margin-bottom:8px;">
+        <i class="fa-solid fa-stream" style="color:#38bdf8;"></i> Kafka Raw Ingestion
+        <span style="margin-left:auto;font-size:9px;font-family:'Fira Code',monospace;background:rgba(56,189,248,.08);border:1px solid rgba(56,189,248,.2);color:#7dd3fc;padding:2px 7px;border-radius:5px;">api-raw-logs</span>
+      </div>
+      <div class="terminal" id="kafka-feed" style="flex:1;overflow-y:auto;">
+        <div class="empty-state">Click "Start Stream Simulation" to begin ingesting API logs…</div>
+      </div>
+    </div>
+
+    <!-- Spark Chart -->
+    <div class="card flex-col" style="height:360px;">
+      <div class="card-title" style="margin-bottom:8px;">
+        <i class="fa-solid fa-chart-line" style="color:var(--orange);"></i> Spark 60s Sliding Windows
+        <span style="margin-left:auto;font-size:9px;font-family:'Fira Code',monospace;background:rgba(251,146,60,.08);border:1px solid rgba(251,146,60,.2);color:var(--orange);padding:2px 7px;border-radius:5px;">Threshold: 100 req/min</span>
+      </div>
+      <div style="flex:1;position:relative;">
+        <canvas id="sparkChart"></canvas>
+      </div>
+    </div>
+
+    <!-- Alert Feed -->
+    <div class="card flex-col" style="height:360px;">
+      <div class="card-title" style="margin-bottom:8px;">
+        <i class="fa-solid fa-triangle-exclamation" style="color:var(--red);"></i> Hive Alert Sink
+        <span id="alert-badge" style="margin-left:auto;font-size:9px;font-family:'Fira Code',monospace;background:rgba(248,113,113,.08);border:1px solid rgba(248,113,113,.2);color:var(--red);padding:2px 7px;border-radius:5px;">0 Anomalies</span>
+      </div>
+      <div id="alert-feed" style="flex:1;overflow-y:auto;" class="terminal">
+        <div class="empty-state">No security alerts detected. Normal traffic flowing…</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Hive Forensics Console -->
+  <div class="card">
+    <div class="flex items-center justify-between mb-16">
+      <div class="card-title" style="margin-bottom:0;">
+        <i class="fa-solid fa-terminal text-amber"></i> Hive Post-Incident SQL Forensics Console
+      </div>
+      <div class="flex gap-8">
+        <button class="btn btn-amber" onclick="runHiveQuery()"><i class="fa-solid fa-play"></i> Execute Query</button>
+        <button class="btn btn-ghost" onclick="clearHiveResults()" style="font-size:10px;padding:6px 10px;"><i class="fa-solid fa-trash"></i></button>
+      </div>
+    </div>
+    <div style="margin-bottom:10px;">
+      <div style="font-size:10px;color:var(--muted);margin-bottom:6px;font-family:'Fira Code',monospace;">HiveQL &gt; api_security database</div>
+      <textarea id="hive-sql" class="sql-editor" rows="3">SELECT client_ip, attack_type, COUNT(*) AS alert_count, SUM(total_requests) AS total_volume, severity
+FROM threat_alerts
+WHERE dt = CURRENT_DATE
+GROUP BY client_ip, attack_type, severity
+ORDER BY total_volume DESC
+LIMIT 20;</textarea>
+    </div>
+    <div style="font-size:10px;color:var(--muted);margin-bottom:6px;" id="hive-exec-info"></div>
+    <div id="hive-results" style="min-height:80px;">
+      <div class="empty-state" style="padding:20px;">Query output will appear here after execution…</div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════════
+     TAB 4: CODE
+═══════════════════════════════════════════════════════ -->
+<div id="panel-code" class="tab-panel">
+
+  <div class="flex gap-8 items-center mb-16">
+    <div style="font-size:18px;font-weight:800;">Implementation Code Base</div>
+    <span class="badge badge-low">Python 3.10 · PySpark · FastAPI</span>
+  </div>
+
+  <!-- File selector tabs -->
+  <div class="inner-tabs" id="code-tabs">
+    <button class="inner-tab active" onclick="showCode('kafka-producer')">kafka_producer.py</button>
+    <button class="inner-tab" onclick="showCode('streaming-job')">streaming_job.py</button>
+    <button class="inner-tab" onclick="showCode('ml-detector')">ml_anomaly_detector.py</button>
+    <button class="inner-tab" onclick="showCode('hive-ddl')">create_tables.sql</button>
+    <button class="inner-tab" onclick="showCode('app-py')">app.py</button>
+    <button class="inner-tab" onclick="showCode('api-schema')">api_schema.py</button>
+  </div>
+
+  <!-- kafka_producer.py -->
+  <div id="code-kafka-producer" class="code-panel">
+    <div class="code-block">
+      <div class="code-header">
+        <div class="code-dots"><span class="r"></span><span class="y"></span><span class="g"></span></div>
+        <span class="code-lang">producer/kafka_producer.py</span>
+        <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+      </div>
+      <div class="code-body"><pre><span class="cm"># kafka_producer.py — Multi-threaded Kafka log publisher</span>
+<span class="cm"># Partitions by client_ip to guarantee per-client event ordering</span>
+
+<span class="kw">import</span> sys, time, json, argparse, logging
+<span class="kw">from</span> producer.api_log_generator <span class="kw">import</span> generate_normal_log
+<span class="kw">from</span> producer.attack_simulator  <span class="kw">import</span> <span class="cls">AttackSimulator</span>
+
+logging.basicConfig(level=logging.INFO,
+    format=<span class="str">"%(asctime)s [%(levelname)s] %(message)s"</span>)
+
+<span class="kw">class</span> <span class="cls">LogProducerManager</span>:
+    <span class="str">"""Manages high-throughput API log generation &amp; Kafka delivery."""</span>
+
+    <span class="kw">def</span> <span class="fn">__init__</span>(self, bootstrap_servers=<span class="str">"localhost:9092"</span>, topic=<span class="str">"api-raw-logs"</span>):
+        self.topic = topic
+        self.bootstrap_servers = bootstrap_servers
+        self.producer = <span class="kw">None</span>
+        self.<span class="fn">_init_kafka</span>()
+
+    <span class="kw">def</span> <span class="fn">_init_kafka</span>(self):
+        <span class="kw">from</span> kafka <span class="kw">import</span> KafkaProducer
+        self.producer = <span class="cls">KafkaProducer</span>(
+            bootstrap_servers=self.bootstrap_servers.split(<span class="str">","</span>),
+            key_serializer=<span class="kw">lambda</span> k: k.encode(<span class="str">"utf-8"</span>),
+            value_serializer=<span class="kw">lambda</span> v: json.dumps(v).encode(<span class="str">"utf-8"</span>),
+            acks=<span class="num">1</span>,
+            retries=<span class="num">3</span>
+        )
+
+    <span class="kw">def</span> <span class="fn">run_stream</span>(self, rate_per_sec=<span class="num">100</span>,
+                    attack_scenario=<span class="kw">None</span>, duration_sec=<span class="kw">None</span>):
+        start_time = time.time()
+        sent_count = <span class="num">0</span>
+
+        <span class="kw">while</span> <span class="kw">True</span>:
+            batch = max(<span class="num">1</span>, rate_per_sec <span class="op">//</span> <span class="num">10</span>)
+            <span class="kw">for</span> _ <span class="kw">in</span> range(batch):
+                <span class="kw">if</span>   attack_scenario == <span class="str">"ddos"</span>:
+                    event = AttackSimulator.<span class="fn">generate_ddos_event</span>()
+                <span class="kw">elif</span> attack_scenario == <span class="str">"bruteforce"</span>:
+                    event = AttackSimulator.<span class="fn">generate_brute_force_event</span>()
+                <span class="kw">else</span>:
+                    event = <span class="fn">generate_normal_log</span>()
+
+                key = event.get(<span class="str">"client_ip"</span>, <span class="str">"default"</span>)
+                self.producer.send(self.topic, key=key, value=event)
+                sent_count += <span class="num">1</span>
+
+            self.producer.<span class="fn">flush</span>()
+            time.<span class="fn">sleep</span>(<span class="num">0.1</span>)
+
+            <span class="kw">if</span> duration_sec <span class="kw">and</span> (time.time() - start_time) >= duration_sec:
+                <span class="kw">break</span></pre>
+      </div>
+    </div>
+  </div>
+
+  <!-- streaming_job.py -->
+  <div id="code-streaming-job" class="code-panel" style="display:none;">
+    <div class="code-block">
+      <div class="code-header">
+        <div class="code-dots"><span class="r"></span><span class="y"></span><span class="g"></span></div>
+        <span class="code-lang">spark/streaming_job.py</span>
+        <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+      </div>
+      <div class="code-body"><pre><span class="cm"># streaming_job.py — PySpark Structured Streaming Driver</span>
+<span class="cm"># Implements 60s window / 10s slide stateful anomaly detection</span>
+
+<span class="kw">from</span> pyspark.sql <span class="kw">import</span> SparkSession
+<span class="kw">from</span> pyspark.sql.functions <span class="kw">import</span> (
+    window, col, count, sum <span class="kw">as</span> _sum, avg,
+    when, lit
+)
+<span class="kw">from</span> spark.schemas.api_schema <span class="kw">import</span> parse_and_validate_stream
+<span class="kw">from</span> spark.detection.ddos_detector        <span class="kw">import</span> detect_ddos
+<span class="kw">from</span> spark.detection.brute_force_detector  <span class="kw">import</span> detect_brute_force
+<span class="kw">from</span> spark.detection.endpoint_abuse_detector <span class="kw">import</span> detect_endpoint_abuse
+
+<span class="kw">def</span> <span class="fn">run_pipeline</span>(kafka_bootstrap=<span class="str">"localhost:9092"</span>):
+    spark = SparkSession.builder \
+        .appName(<span class="str">"API-Threat-Anomaly-Detector"</span>) \
+        .config(<span class="str">"spark.sql.warehouse.dir"</span>, <span class="str">"/user/hive/warehouse"</span>) \
+        .config(<span class="str">"spark.sql.shuffle.partitions"</span>, <span class="str">"3"</span>) \
+        .getOrCreate()
+
+    <span class="cm"># 1. Read from Kafka</span>
+    raw_df = spark.readStream \
+        .format(<span class="str">"kafka"</span>) \
+        .option(<span class="str">"kafka.bootstrap.servers"</span>, kafka_bootstrap) \
+        .option(<span class="str">"subscribe"</span>, <span class="str">"api-raw-logs"</span>) \
+        .option(<span class="str">"startingOffsets"</span>, <span class="str">"latest"</span>) \
+        .load()
+
+    <span class="cm"># 2. Parse JSON &amp; validate schema</span>
+    valid_df, dead_df = <span class="fn">parse_and_validate_stream</span>(raw_df)
+
+    <span class="cm"># 3. 10-min watermark for late data</span>
+    wm_df = valid_df.withWatermark(<span class="str">"event_timestamp"</span>, <span class="str">"10 minutes"</span>)
+
+    <span class="cm"># 4. 60s sliding window / 10s slide aggregation per IP</span>
+    windowed = wm_df.groupBy(
+        window(col(<span class="str">"event_timestamp"</span>), <span class="str">"60 seconds"</span>, <span class="str">"10 seconds"</span>),
+        col(<span class="str">"client_ip"</span>)
+    ).agg(
+        count(<span class="str">"*"</span>).alias(<span class="str">"total_requests"</span>),
+        _sum(when(col(<span class="str">"status_code"</span>) == <span class="num">401</span>, <span class="num">1</span>).otherwise(<span class="num">0</span>)).alias(<span class="str">"failed_logins"</span>),
+        _sum(when(col(<span class="str">"status_code"</span>) >= <span class="num">500</span>, <span class="num">1</span>).otherwise(<span class="num">0</span>)).alias(<span class="str">"error_5xx_count"</span>),
+        avg(<span class="str">"response_time_ms"</span>).cast(<span class="str">"integer"</span>).alias(<span class="str">"avg_response_time"</span>),
+        _sum(<span class="str">"bytes_sent"</span>).alias(<span class="str">"total_bytes"</span>)
+    )
+
+    <span class="cm"># 5. Apply rule-based detectors (chained)</span>
+    with_rules = <span class="fn">detect_endpoint_abuse</span>(
+        <span class="fn">detect_brute_force</span>(
+            <span class="fn">detect_ddos</span>(windowed, threshold_req_per_min=<span class="num">100</span>),
+            threshold_failed_logins=<span class="num">10</span>
+        )
+    )
+
+    <span class="cm"># 6. Classify attack type &amp; severity</span>
+    flagged = with_rules.withColumn(<span class="str">"attack_type"</span>,
+        when(col(<span class="str">"is_ddos"</span>),           <span class="str">"DDoS_ATTACK"</span>)
+       .when(col(<span class="str">"is_brute_force"</span>),    <span class="str">"BRUTE_FORCE"</span>)
+       .when(col(<span class="str">"is_endpoint_abuse"</span>), <span class="str">"ENDPOINT_ABUSE"</span>)
+       .when(col(<span class="str">"is_error_spike"</span>),    <span class="str">"HTTP_5XX_SPIKE"</span>)
+       .when(col(<span class="str">"is_large_payload"</span>),  <span class="str">"PAYLOAD_EXFILTRATION"</span>)
+       .otherwise(<span class="str">"NONE"</span>)
+    )
+
+    <span class="cm"># 7. Write to Hive ORC sink (alerts only)</span>
+    alerts = flagged.filter(col(<span class="str">"attack_type"</span>) != <span class="str">"NONE"</span>)
+    alerts.writeStream \
+        .format(<span class="str">"orc"</span>) \
+        .outputMode(<span class="str">"append"</span>) \
+        .option(<span class="str">"path"</span>, <span class="str">"/user/hive/warehouse/api_security.db/threat_alerts"</span>) \
+        .option(<span class="str">"checkpointLocation"</span>, <span class="str">"/tmp/checkpoints/alerts"</span>) \
+        .start()
+
+    <span class="kw">return</span> alerts.writeStream.format(<span class="str">"console"</span>).start()</pre>
+      </div>
+    </div>
+  </div>
+
+  <!-- ml_anomaly_detector.py -->
+  <div id="code-ml-detector" class="code-panel" style="display:none;">
+    <div class="code-block">
+      <div class="code-header">
+        <div class="code-dots"><span class="r"></span><span class="y"></span><span class="g"></span></div>
+        <span class="code-lang">spark/detection/ml_anomaly_detector.py</span>
+        <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+      </div>
+      <div class="code-body"><pre><span class="cm"># ml_anomaly_detector.py — Isolation Forest + Z-Score Anomaly Engine</span>
+<span class="cm"># Pre-seeded on 500 synthetic normal-traffic baseline samples</span>
+
+<span class="kw">import</span> numpy <span class="kw">as</span> np
+<span class="kw">from</span> sklearn.ensemble <span class="kw">import</span> IsolationForest
+
+<span class="kw">class</span> <span class="cls">MLAnomalyDetector</span>:
+    <span class="str">"""Isolation Forest &amp; Statistical Z-Score ML Anomaly Detector."""</span>
+
+    <span class="kw">def</span> <span class="fn">__init__</span>(self, contamination=<span class="num">0.05</span>,
+                 n_estimators=<span class="num">100</span>, random_state=<span class="num">42</span>):
+        self.model = <span class="cls">IsolationForest</span>(
+            contamination=contamination,
+            n_estimators=n_estimators,
+            random_state=random_state
+        )
+        self.is_fitted = <span class="kw">False</span>
+        self.<span class="fn">_seed_baseline_training</span>()
+
+    <span class="kw">def</span> <span class="fn">_seed_baseline_training</span>(self):
+        <span class="str">"""Seed initial model with synthetic baseline traffic distributions.
+        Features: [total_requests, failed_logins, error_5xx, avg_resp_ms, total_bytes]
+        """</span>
+        normal_samples = []
+        <span class="kw">for</span> _ <span class="kw">in</span> range(<span class="num">500</span>):
+            normal_samples.append([
+                np.random.randint(<span class="num">5</span>,  <span class="num">35</span>),    <span class="cm"># total_requests</span>
+                np.random.randint(<span class="num">0</span>,   <span class="num">2</span>),    <span class="cm"># failed_logins</span>
+                np.random.randint(<span class="num">0</span>,   <span class="num">1</span>),    <span class="cm"># error_5xx_count</span>
+                np.random.randint(<span class="num">20</span>, <span class="num">250</span>),   <span class="cm"># avg_response_ms</span>
+                np.random.randint(<span class="num">500</span>, <span class="num">50000</span>) <span class="cm"># total_bytes</span>
+            ])
+        self.model.fit(normal_samples)
+        self.is_fitted = <span class="kw">True</span>
+
+    <span class="kw">def</span> <span class="fn">predict_anomaly_score</span>(self, feature_vector):
+        <span class="str">"""Returns (score: 0.0-1.0, is_anomaly: bool).
+        score &gt; 0.65  →  anomaly
+        """</span>
+        X = np.array([feature_vector], dtype=float)
+        raw = float(self.model.score_samples(X)[<span class="num">0</span>])
+        <span class="cm"># Map [-1.0, 0.5] → [0.0, 1.0]</span>
+        score = max(<span class="num">0.0</span>, min(<span class="num">1.0</span>, round(<span class="num">0.5</span> - raw, <span class="num">4</span>)))
+        <span class="kw">return</span> score, score > <span class="num">0.65</span></pre>
+      </div>
+    </div>
+  </div>
+
+  <!-- create_tables.sql -->
+  <div id="code-hive-ddl" class="code-panel" style="display:none;">
+    <div class="code-block">
+      <div class="code-header">
+        <div class="code-dots"><span class="r"></span><span class="y"></span><span class="g"></span></div>
+        <span class="code-lang">hive/create_tables.sql</span>
+        <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+      </div>
+      <div class="code-body"><pre><span class="cm">-- create_tables.sql  —  Initialize Hive Security Database</span>
+<span class="cm">-- Run once after starting the Hive server container</span>
+
+<span class="kw">CREATE DATABASE IF NOT EXISTS</span> api_security;
+<span class="kw">USE</span> api_security;
+
+<span class="cm">-- 1. Raw API Gateway Logs  (Snappy Parquet, partitioned by date)</span>
+<span class="kw">CREATE EXTERNAL TABLE IF NOT EXISTS</span> raw_api_logs (
+    request_id       <span class="cls">STRING</span>,
+    client_ip        <span class="cls">STRING</span>,
+    endpoint         <span class="cls">STRING</span>,
+    http_method      <span class="cls">STRING</span>,
+    status_code      <span class="cls">INT</span>,
+    response_time_ms <span class="cls">INT</span>,
+    bytes_sent       <span class="cls">BIGINT</span>,
+    user_agent       <span class="cls">STRING</span>,
+    country          <span class="cls">STRING</span>,
+    event_timestamp  <span class="cls">TIMESTAMP</span>
+)
+<span class="kw">PARTITIONED BY</span> (dt <span class="cls">STRING</span>)
+<span class="kw">STORED AS</span> PARQUET
+<span class="kw">LOCATION</span> <span class="str">'/user/hive/warehouse/api_security.db/raw_api_logs'</span>;
+
+<span class="cm">-- 2. Threat Alerts  (ORC, optimised for column-pruned analytical queries)</span>
+<span class="kw">CREATE EXTERNAL TABLE IF NOT EXISTS</span> threat_alerts (
+    window_start     <span class="cls">TIMESTAMP</span>,
+    window_end       <span class="cls">TIMESTAMP</span>,
+    client_ip        <span class="cls">STRING</span>,
+    total_requests   <span class="cls">BIGINT</span>,
+    failed_logins    <span class="cls">BIGINT</span>,
+    error_5xx_count  <span class="cls">BIGINT</span>,
+    avg_response_time <span class="cls">INT</span>,
+    total_bytes      <span class="cls">BIGINT</span>,
+    attack_type      <span class="cls">STRING</span>,
+    severity         <span class="cls">STRING</span>,
+    anomaly_score    <span class="cls">DOUBLE</span>
+)
+<span class="kw">PARTITIONED BY</span> (dt <span class="cls">STRING</span>)
+<span class="kw">STORED AS</span> ORC
+<span class="kw">LOCATION</span> <span class="str">'/user/hive/warehouse/api_security.db/threat_alerts'</span>;
+
+<span class="cm">-- 3. Dead-Letter Queue  (malformed / unparse-able events)</span>
+<span class="kw">CREATE EXTERNAL TABLE IF NOT EXISTS</span> dead_letter_events (
+    raw_payload      <span class="cls">STRING</span>,
+    ingestion_time   <span class="cls">TIMESTAMP</span>,
+    error_reason     <span class="cls">STRING</span>
+)
+<span class="kw">STORED AS</span> TEXTFILE
+<span class="kw">LOCATION</span> <span class="str">'/user/hive/warehouse/api_security.db/dead_letter_events'</span>;</pre>
+      </div>
+    </div>
+  </div>
+
+  <!-- app.py -->
+  <div id="code-app-py" class="code-panel" style="display:none;">
+    <div class="code-block">
+      <div class="code-header">
+        <div class="code-dots"><span class="r"></span><span class="y"></span><span class="g"></span></div>
+        <span class="code-lang">dashboard/app.py  —  FastAPI Backend with SSE</span>
+        <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+      </div>
+      <div class="code-body"><pre><span class="cm"># app.py — FastAPI dashboard backend</span>
+<span class="cm"># Key endpoints:
+#   GET  /            — Serve index.html
+#   GET  /api/state   — Snapshot of simulation state
+#   POST /api/toggle-stream   — Start / stop simulation loop
+#   POST /api/trigger-attack  — Inject 8-second attack burst
+#   GET  /api/stream  — Server-Sent Events (SSE) live push
+#   POST /api/run-hive-query  — Simulated Hive forensics query
+#   POST /api/reset   — Reset all counters</span>
+
+<span class="kw">from</span> fastapi <span class="kw">import</span> FastAPI, Request, BackgroundTasks
+<span class="kw">from</span> fastapi.responses <span class="kw">import</span> HTMLResponse, JSONResponse, StreamingResponse
+<span class="kw">from</span> fastapi.templating <span class="kw">import</span> Jinja2Templates
+<span class="kw">import</span> asyncio, json, random
+<span class="kw">from</span> datetime <span class="kw">import</span> datetime, timezone
+
+app = <span class="cls">FastAPI</span>(title=<span class="str">"API Threat Detection Dashboard"</span>)
+_sse_subscribers: list[asyncio.Queue] = []
+
+<span class="fn">@app.get</span>(<span class="str">"/api/stream"</span>)
+<span class="kw">async def</span> <span class="fn">sse_stream</span>(request: Request):
+    q = asyncio.<span class="cls">Queue</span>(maxsize=<span class="num">60</span>)
+    _sse_subscribers.append(q)
+
+    <span class="kw">async def</span> <span class="fn">generator</span>():
+        <span class="kw">try</span>:
+            <span class="kw">while True</span>:
+                <span class="kw">if await</span> request.<span class="fn">is_disconnected</span>(): <span class="kw">break</span>
+                <span class="kw">try</span>:
+                    payload = <span class="kw">await</span> asyncio.<span class="fn">wait_for</span>(q.get(), timeout=<span class="num">20.0</span>)
+                    <span class="kw">yield</span> <span class="str">f"data: {payload}\n\n"</span>
+                <span class="kw">except</span> asyncio.TimeoutError:
+                    <span class="kw">yield</span> <span class="str">": keep-alive\n\n"</span>  <span class="cm"># prevent proxy timeout</span>
+        <span class="kw">finally</span>:
+            <span class="kw">if</span> q <span class="kw">in</span> _sse_subscribers:
+                _sse_subscribers.remove(q)
+
+    <span class="kw">return</span> <span class="cls">StreamingResponse</span>(<span class="fn">generator</span>(),
+        media_type=<span class="str">"text/event-stream"</span>,
+        headers={<span class="str">"Cache-Control"</span>: <span class="str">"no-cache"</span>,
+                 <span class="str">"X-Accel-Buffering"</span>: <span class="str">"no"</span>})</pre>
+      </div>
+    </div>
+  </div>
+
+  <!-- api_schema.py -->
+  <div id="code-api-schema" class="code-panel" style="display:none;">
+    <div class="code-block">
+      <div class="code-header">
+        <div class="code-dots"><span class="r"></span><span class="y"></span><span class="g"></span></div>
+        <span class="code-lang">spark/schemas/api_schema.py</span>
+        <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+      </div>
+      <div class="code-body"><pre><span class="cm"># api_schema.py — PySpark StructType schema + stream validator</span>
+
+<span class="kw">from</span> pyspark.sql.types <span class="kw">import</span> (
+    StructType, StructField,
+    StringType, IntegerType, TimestampType, LongType
+)
+<span class="kw">from</span> pyspark.sql.functions <span class="kw">import</span> from_json, col, when
+
+<span class="kw">def</span> <span class="fn">get_api_log_schema</span>():
+    <span class="kw">return</span> <span class="cls">StructType</span>([
+        <span class="cls">StructField</span>(<span class="str">"timestamp"</span>,       <span class="cls">StringType</span>(),    <span class="kw">True</span>),
+        <span class="cls">StructField</span>(<span class="str">"request_id"</span>,     <span class="cls">StringType</span>(),    <span class="kw">True</span>),
+        <span class="cls">StructField</span>(<span class="str">"client_ip"</span>,      <span class="cls">StringType</span>(),    <span class="kw">True</span>),
+        <span class="cls">StructField</span>(<span class="str">"endpoint"</span>,       <span class="cls">StringType</span>(),    <span class="kw">True</span>),
+        <span class="cls">StructField</span>(<span class="str">"http_method"</span>,    <span class="cls">StringType</span>(),    <span class="kw">True</span>),
+        <span class="cls">StructField</span>(<span class="str">"status_code"</span>,    <span class="cls">IntegerType</span>(),   <span class="kw">True</span>),
+        <span class="cls">StructField</span>(<span class="str">"response_time_ms"</span>, <span class="cls">IntegerType</span>(), <span class="kw">True</span>),
+        <span class="cls">StructField</span>(<span class="str">"bytes_sent"</span>,     <span class="cls">LongType</span>(),      <span class="kw">True</span>),
+        <span class="cls">StructField</span>(<span class="str">"user_agent"</span>,     <span class="cls">StringType</span>(),    <span class="kw">True</span>),
+        <span class="cls">StructField</span>(<span class="str">"country"</span>,        <span class="cls">StringType</span>(),    <span class="kw">True</span>)
+    ])
+
+<span class="kw">def</span> <span class="fn">parse_and_validate_stream</span>(raw_df):
+    schema = <span class="fn">get_api_log_schema</span>()
+    parsed = raw_df \
+        .selectExpr(<span class="str">"CAST(value AS STRING) AS json_payload"</span>) \
+        .select(from_json(col(<span class="str">"json_payload"</span>), schema).alias(<span class="str">"d"</span>)) \
+        .select(<span class="str">"d.*"</span>) \
+        .withColumn(<span class="str">"event_timestamp"</span>, col(<span class="str">"timestamp"</span>).cast(<span class="cls">TimestampType</span>()))
+
+    validated = parsed.withColumn(<span class="str">"is_valid"</span>,
+        when(col(<span class="str">"client_ip"</span>).isNotNull() &amp;
+             col(<span class="str">"endpoint"</span>).isNotNull() &amp;
+             col(<span class="str">"event_timestamp"</span>).isNotNull(), <span class="kw">True</span>).otherwise(<span class="kw">False</span>)
+    )
+    <span class="kw">return</span> (validated.filter(col(<span class="str">"is_valid"</span>) == <span class="kw">True</span>).drop(<span class="str">"is_valid"</span>),
+            validated.filter(col(<span class="str">"is_valid"</span>) == <span class="kw">False</span>))</pre>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════════
+     TAB 5: STARTUP GUIDE
+═══════════════════════════════════════════════════════ -->
+<div id="panel-guide" class="tab-panel">
+
+  <div class="flex items-center gap-12 mb-16">
+    <div style="font-size:18px;font-weight:800;"><i class="fa-solid fa-terminal text-accent mr-2"></i> Complete Startup Guide</div>
+    <span class="badge badge-low">Docker · Python · Spark · Kafka</span>
+  </div>
+
+  <!-- Prerequisites -->
+  <div class="card mb-16">
+    <div class="card-title"><i class="fa-solid fa-list-check text-green"></i> Prerequisites</div>
+    <div class="grid3 gap-12 mt-8">
+      <div class="algo-card">
+        <div class="algo-title"><i class="fa-brands fa-docker text-accent mr-1"></i> Docker Desktop</div>
+        <div class="algo-desc">Docker Desktop ≥ 4.x with Docker Compose V2.<br>Min: 8 GB RAM, 4 CPU cores allocated.</div>
+        <a href="https://docs.docker.com/get-docker/" target="_blank" style="font-size:10px;color:var(--accent);text-decoration:none;margin-top:8px;display:block;">docs.docker.com/get-docker →</a>
+      </div>
+      <div class="algo-card">
+        <div class="algo-title"><i class="fa-brands fa-python text-amber mr-1"></i> Python 3.10+</div>
+        <div class="algo-desc">Required for the dashboard server and unit tests. Recommend using a virtual environment (venv or conda).</div>
+        <a href="https://www.python.org/downloads/" target="_blank" style="font-size:10px;color:var(--accent);text-decoration:none;margin-top:8px;display:block;">python.org/downloads →</a>
+      </div>
+      <div class="algo-card">
+        <div class="algo-title"><i class="fa-solid fa-bolt text-orange mr-1"></i> Java 8 (for Spark CLI)</div>
+        <div class="algo-desc">Required only if running spark-submit <em>outside</em> Docker. If using Docker Compose, Java is pre-installed in Spark images.</div>
+        <a href="https://adoptium.net/" target="_blank" style="font-size:10px;color:var(--accent);text-decoration:none;margin-top:8px;display:block;">adoptium.net →</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Step-by-step guide -->
+  <div class="space-y-16">
+
+    <!-- Step 1 -->
+    <div class="step-card">
+      <div class="step-num" style="background:rgba(14,165,233,.12);color:#38bdf8;">1</div>
+      <div style="flex:1;">
+        <div class="step-title">Clone &amp; Install Python Dependencies</div>
+        <div class="step-desc">First, set up a virtual environment and install all Python packages from <code>requirements.txt</code>.</div>
+        <div class="cmd-block">
+          <button class="copy-btn" onclick="copyCmd(this)">Copy</button>
+          <span class="comment"># Navigate to the project directory</span>
+cd "Real-Time API Threat & Anomaly Detection Platform"
+
+<span class="comment"># Create and activate virtual environment</span>
+python -m venv venv
+<span class="comment"># On Windows:</span>
+venv\Scripts\activate
+<span class="comment"># On macOS/Linux:</span>
+source venv/bin/activate
+
+<span class="comment"># Install all Python dependencies</span>
+pip install -r requirements.txt
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 2 -->
+    <div class="step-card">
+      <div class="step-num" style="background:rgba(251,191,36,.1);color:var(--amber);">2</div>
+      <div style="flex:1;">
+        <div class="step-title">Start the Docker Infrastructure Stack</div>
+        <div class="step-desc">Spins up all infrastructure services: Zookeeper, Kafka, HDFS NameNode, DataNode, Spark Master, Spark Worker, Hive Metastore, and Hive Server.</div>
+        <div class="cmd-block">
+          <button class="copy-btn" onclick="copyCmd(this)">Copy</button>
+          <span class="comment"># Pull images and start all 8 services in background (first run takes ~3-5 min)</span>
+docker compose up -d
+
+<span class="comment"># Verify all containers are healthy</span>
+docker compose ps
+
+<span class="comment"># Expected output: 8 containers all showing "running" or "healthy"</span>
+<span class="comment"># zookeeper, kafka, namenode, datanode, spark-master, spark-worker,</span>
+<span class="comment"># hive-metastore, hive-server, threat-dashboard</span>
+        </div>
+        <div style="margin-top:10px;font-size:11px;color:var(--muted);">
+          <strong>Web UIs available after step 2:</strong>
+          <span style="margin-left:8px;color:var(--accent);">Spark Master:</span> <a href="http://localhost:8080" target="_blank" style="color:var(--accent);font-family:'Fira Code',monospace;font-size:10px;">localhost:8080</a> &nbsp;·&nbsp;
+          <span style="color:var(--amber);">HDFS:</span> <a href="http://localhost:9870" target="_blank" style="color:var(--amber);font-family:'Fira Code',monospace;font-size:10px;">localhost:9870</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 3 -->
+    <div class="step-card">
+      <div class="step-num" style="background:rgba(167,139,250,.1);color:var(--purple);">3</div>
+      <div style="flex:1;">
+        <div class="step-title">Initialize Hive Tables (First Time Only)</div>
+        <div class="step-desc">Execute the Hive DDL to create the <code>api_security</code> database and three external tables (raw logs in Parquet, alerts in ORC, dead-letter queue).</div>
+        <div class="cmd-block">
+          <button class="copy-btn" onclick="copyCmd(this)">Copy</button>
+          <span class="comment"># Wait 30 seconds after docker compose up for Hive to be ready, then:</span>
+docker exec -it hive-server beeline \
+    -u "jdbc:hive2://localhost:10000" \
+    -f /opt/hive/hive/create_tables.sql
+
+<span class="comment"># Or manually copy the SQL file into the container first:</span>
+docker cp hive/create_tables.sql hive-server:/tmp/
+docker exec -it hive-server beeline \
+    -u "jdbc:hive2://localhost:10000" \
+    -f /tmp/create_tables.sql
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 4 -->
+    <div class="step-card">
+      <div class="step-num" style="background:rgba(74,222,128,.1);color:var(--green);">4</div>
+      <div style="flex:1;">
+        <div class="step-title">Launch the FastAPI Dashboard (Demo Mode)</div>
+        <div class="step-desc">The dashboard runs in fully standalone <strong>demo mode</strong> — no Kafka or Spark required. Start it with uvicorn to access the live simulator, attack injector, and Hive forensics console.</div>
+        <div class="cmd-block">
+          <button class="copy-btn" onclick="copyCmd(this)">Copy</button>
+          <span class="comment"># Start the dashboard server (demo mode — no external dependencies needed)</span>
+uvicorn dashboard.app:app --host 0.0.0.0 --port 8000 --reload
+
+<span class="comment"># Then open in browser:</span>
+<span class="comment">#   http://localhost:8000</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 5 -->
+    <div class="step-card">
+      <div class="step-num" style="background:rgba(251,146,60,.1);color:var(--orange);">5</div>
+      <div style="flex:1;">
+        <div class="step-title">Submit the PySpark Streaming Job</div>
+        <div class="step-desc">Submits the streaming driver to the Spark cluster. This connects to the live Kafka broker and starts processing real events from the <code>api-raw-logs</code> topic.</div>
+        <div class="cmd-block">
+          <button class="copy-btn" onclick="copyCmd(this)">Copy</button>
+          <span class="comment"># Submit via spark-submit with Kafka connector package</span>
+spark-submit \
+    --master spark://localhost:7077 \
+    --packages org.apache.spark:spark-sql-kafka-0-10_2.12:3.4.1 \
+    spark/streaming_job.py localhost:9092
+
+<span class="comment"># OR submit inside the Docker Spark master container:</span>
+docker exec spark-master spark-submit \
+    --packages org.apache.spark:spark-sql-kafka-0-10_2.12:3.0.0 \
+    /app/spark/streaming_job.py kafka:29092
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 6 -->
+    <div class="step-card">
+      <div class="step-num" style="background:rgba(239,68,68,.1);color:var(--red);">6</div>
+      <div style="flex:1;">
+        <div class="step-title">Run the Kafka Log Producer (Live Traffic Simulation)</div>
+        <div class="step-desc">Injects real API log events into Kafka at the specified rate. Use <code>--attack</code> to inject sustained attack traffic.</div>
+        <div class="cmd-block">
+          <button class="copy-btn" onclick="copyCmd(this)">Copy</button>
+          <span class="comment"># Normal traffic at 200 events/sec</span>
+python -m producer.kafka_producer --rate 200
+
+<span class="comment"># DDoS attack injection at 500 events/sec for 30 seconds</span>
+python -m producer.kafka_producer --rate 500 --attack ddos --duration 30
+
+<span class="comment"># Brute-force attack</span>
+python -m producer.kafka_producer --rate 300 --attack bruteforce
+
+<span class="comment"># Distributed botnet (random IPs)</span>
+python -m producer.kafka_producer --rate 1000 --attack botnet
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 7 -->
+    <div class="step-card">
+      <div class="step-num" style="background:rgba(34,211,238,.1);color:var(--accent);">7</div>
+      <div style="flex:1;">
+        <div class="step-title">Run Unit Tests</div>
+        <div class="step-desc">Validates all 8 unit tests across the producer, detection engine, and schema modules. No Kafka or Spark installation required for tests.</div>
+        <div class="cmd-block">
+          <button class="copy-btn" onclick="copyCmd(this)">Copy</button>
+          <span class="comment"># Run the full test suite (8 tests, ~2 seconds)</span>
+python -m pytest tests/ -v
+
+<span class="comment"># OR with unittest directly</span>
+python -m unittest discover tests -v
+
+<span class="comment"># Expected output:</span>
+<span class="comment">#   test_generate_normal_log_structure ... ok</span>
+<span class="comment">#   test_attack_simulator_ddos ...         ok</span>
+<span class="comment">#   test_attack_simulator_brute_force ...  ok</span>
+<span class="comment">#   test_attack_simulator_payload ...      ok</span>
+<span class="comment">#   test_calculate_z_score ...             ok</span>
+<span class="comment">#   test_calculate_stats ...               ok</span>
+<span class="comment">#   test_api_log_schema_fields ...         ok</span>
+<span class="comment">#   test_alert_schema_fields ...           ok</span>
+<span class="comment">#   Ran 8 tests in 1.842s   OK</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Quick Reference -->
+  <div class="card mt-16">
+    <div class="card-title"><i class="fa-solid fa-bookmark text-amber"></i> Quick Reference — Service URLs</div>
+    <table class="rubric-table mt-8">
+      <thead><tr><th>Service</th><th>URL</th><th>Credentials</th></tr></thead>
+      <tbody>
+        <tr><td class="fw-700">Threat Dashboard</td><td><code style="color:var(--accent);">http://localhost:8000</code></td><td style="color:var(--muted);">None (open)</td></tr>
+        <tr><td class="fw-700">Spark Master UI</td><td><code style="color:var(--orange);">http://localhost:8080</code></td><td style="color:var(--muted);">None</td></tr>
+        <tr><td class="fw-700">Spark Worker UI</td><td><code style="color:var(--orange);">http://localhost:8081</code></td><td style="color:var(--muted);">None</td></tr>
+        <tr><td class="fw-700">HDFS NameNode UI</td><td><code style="color:var(--amber);">http://localhost:9870</code></td><td style="color:var(--muted);">None</td></tr>
+        <tr><td class="fw-700">Kafka Broker (ext)</td><td><code style="color:var(--accent);">localhost:9092</code></td><td style="color:var(--muted);">None (PLAINTEXT)</td></tr>
+        <tr><td class="fw-700">Kafka Broker (int)</td><td><code style="color:var(--accent);">kafka:29092</code></td><td style="color:var(--muted);">Docker network only</td></tr>
+        <tr><td class="fw-700">HiveServer2 (Beeline)</td><td><code style="color:var(--amber);">localhost:10000</code></td><td style="color:var(--muted);">hive / hive</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Teardown -->
+  <div class="card mt-16">
+    <div class="card-title"><i class="fa-solid fa-stop text-red"></i> Teardown</div>
+    <div class="cmd-block mt-8" style="position:relative;">
+      <button class="copy-btn" onclick="copyCmd(this)">Copy</button>
+<span class="comment"># Stop all containers (keeps data volumes)</span>
+docker compose down
+
+<span class="comment"># Stop and remove all volumes (full reset)</span>
+docker compose down -v
+    </div>
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════════
+     TAB 6: PROJECT REPORT
+═══════════════════════════════════════════════════════ -->
+<div id="panel-report" class="tab-panel">
+
+  <div style="font-size:18px;font-weight:800;margin-bottom:4px;">CSE412 Project Report</div>
+  <div style="font-size:12px;color:var(--muted);margin-bottom:20px;">Real-Time API Threat &amp; Anomaly Detection Platform</div>
+
+  <div class="space-y-16">
+
+    <!-- Abstract -->
+    <div class="card">
+      <div class="card-title"><i class="fa-solid fa-file-lines text-accent"></i> Abstract</div>
+      <p style="font-size:12px;color:var(--muted);line-height:1.85;">
+        We designed and implemented a distributed streaming security analytics platform targeting the challenge of real-time API threat detection at scale. The system ingests high-velocity API gateway events through <strong style="color:var(--text);">Apache Kafka</strong> (IP-keyed partitioning for ordered per-client processing), performs stateful anomaly detection via <strong style="color:var(--text);">Apache Spark Structured Streaming</strong> with 60-second sliding windows and 10-second slide intervals, and persists both raw and enriched security events to <strong style="color:var(--text);">Apache Hive on HDFS</strong> in ORC/Parquet formats for SQL-based forensic investigation.
+      </p>
+      <p style="font-size:12px;color:var(--muted);line-height:1.85;margin-top:10px;">
+        A hybrid detection layer combines five deterministic rule-based detectors (DDoS, Brute-Force, Endpoint Abuse, HTTP 5XX Spike, Payload Exfiltration) with an <strong style="color:var(--text);">Isolation Forest machine learning model</strong> and Z-score statistical baseline that collectively achieve &lt;200ms alert latency on a single-node demo cluster. The interactive web dashboard provides real-time visualization, attack injection controls, and a Hive forensics SQL console — enabling both live demonstration and post-incident investigation workflows.
+      </p>
+    </div>
+
+    <!-- Technical Contributions -->
+    <div class="card">
+      <div class="card-title"><i class="fa-solid fa-flask text-purple"></i> Technical Contributions</div>
+      <div class="space-y-12" style="font-size:12px;">
+        <div style="display:flex;gap:10px;">
+          <span style="color:var(--accent);font-weight:800;min-width:28px;">01</span>
+          <div><strong>IP-Keyed Kafka Partitioning:</strong> <span style="color:var(--muted);">Using <code>client_ip</code> as the Kafka message key guarantees that all events from the same client always land in the same partition, enabling per-client stateful aggregation within Spark streaming without cross-partition shuffles.</span></div>
+        </div>
+        <div style="display:flex;gap:10px;">
+          <span style="color:var(--accent);font-weight:800;min-width:28px;">02</span>
+          <div><strong>Sliding Window Watermarking:</strong> <span style="color:var(--muted);">A 10-minute watermark on <code>event_timestamp</code> allows Spark to wait for late-arriving events before closing a window, crucial for handling network jitter and producer retries without duplicating or losing alerts.</span></div>
+        </div>
+        <div style="display:flex;gap:10px;">
+          <span style="color:var(--accent);font-weight:800;min-width:28px;">03</span>
+          <div><strong>Dual-Sink Persistence Strategy:</strong> <span style="color:var(--muted);">Raw events go to HDFS Snappy-compressed Parquet (optimized for write throughput and retention), while security alerts go to Hive ORC (optimized for column-pruned analytical SQL aggregations and reporting).</span></div>
+        </div>
+        <div style="display:flex;gap:10px;">
+          <span style="color:var(--accent);font-weight:800;min-width:28px;">04</span>
+          <div><strong>Hybrid Detection Architecture:</strong> <span style="color:var(--muted);">Rule-based detectors provide deterministic instant flagging with zero false negatives for known attack thresholds. The Isolation Forest layer catches subtle multi-dimensional anomalies (e.g., combined moderate rate increase + large payload + unusual endpoint sequence) that no single threshold can capture.</span></div>
+        </div>
+        <div style="display:flex;gap:10px;">
+          <span style="color:var(--accent);font-weight:800;min-width:28px;">05</span>
+          <div><strong>Server-Sent Events Dashboard:</strong> <span style="color:var(--muted);">The FastAPI backend maintains a list of active SSE subscriber queues. The async simulation loop pushes log and alert delta events to all connected browser clients within 600ms, enabling true real-time visualization without polling.</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Results -->
+    <div class="card">
+      <div class="card-title"><i class="fa-solid fa-chart-bar text-green"></i> Verification Results</div>
+      <div class="grid2 gap-12">
+        <div>
+          <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;">Unit Test Suite</div>
+          <div class="space-y-12">
+            <div style="display:flex;justify-content:space-between;align-items:center;font-size:12px;border-bottom:1px solid var(--border);padding-bottom:8px;">
+              <span>test_generate_normal_log_structure</span><span class="badge badge-low">PASS</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;align-items:center;font-size:12px;border-bottom:1px solid var(--border);padding-bottom:8px;">
+              <span>test_attack_simulator_ddos</span><span class="badge badge-low">PASS</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;align-items:center;font-size:12px;border-bottom:1px solid var(--border);padding-bottom:8px;">
+              <span>test_attack_simulator_brute_force</span><span class="badge badge-low">PASS</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;align-items:center;font-size:12px;border-bottom:1px solid var(--border);padding-bottom:8px;">
+              <span>test_attack_simulator_payload_exfiltration</span><span class="badge badge-low">PASS</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;align-items:center;font-size:12px;border-bottom:1px solid var(--border);padding-bottom:8px;">
+              <span>test_calculate_z_score</span><span class="badge badge-low">PASS</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;align-items:center;font-size:12px;border-bottom:1px solid var(--border);padding-bottom:8px;">
+              <span>test_calculate_stats</span><span class="badge badge-low">PASS</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;align-items:center;font-size:12px;border-bottom:1px solid var(--border);padding-bottom:8px;">
+              <span>test_api_log_schema_fields</span><span class="badge badge-low">PASS</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;align-items:center;font-size:12px;">
+              <span>test_alert_schema_fields</span><span class="badge badge-low">PASS</span>
+            </div>
+          </div>
+          <div style="margin-top:12px;padding:10px;background:rgba(74,222,128,.05);border:1px solid rgba(74,222,128,.2);border-radius:8px;font-size:12px;color:var(--green);font-family:'Fira Code',monospace;">
+            Ran 8 tests in ~1.8s &nbsp;&nbsp; OK ✓
+          </div>
+        </div>
+        <div>
+          <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;">Detection Performance Metrics</div>
+          <div class="space-y-12">
+            <div style="display:flex;justify-content:space-between;font-size:12px;border-bottom:1px solid var(--border);padding-bottom:8px;">
+              <span style="color:var(--muted);">Alert Latency (rule-based)</span>
+              <span class="fw-700 text-green">&lt; 200ms</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;font-size:12px;border-bottom:1px solid var(--border);padding-bottom:8px;">
+              <span style="color:var(--muted);">DDoS Detection Threshold</span>
+              <span class="fw-700">100 req / 60s window</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;font-size:12px;border-bottom:1px solid var(--border);padding-bottom:8px;">
+              <span style="color:var(--muted);">Brute-Force Threshold</span>
+              <span class="fw-700">10 HTTP 401 / 60s</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;font-size:12px;border-bottom:1px solid var(--border);padding-bottom:8px;">
+              <span style="color:var(--muted);">ML Anomaly Threshold</span>
+              <span class="fw-700">Isolation Forest score &gt; 0.65</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;font-size:12px;border-bottom:1px solid var(--border);padding-bottom:8px;">
+              <span style="color:var(--muted);">Z-Score Threshold</span>
+              <span class="fw-700">|Z| &gt; 3.0σ</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;font-size:12px;border-bottom:1px solid var(--border);padding-bottom:8px;">
+              <span style="color:var(--muted);">HDFS Parquet Compression</span>
+              <span class="fw-700">Snappy</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;font-size:12px;">
+              <span style="color:var(--muted);">Hive Alert ORC Format</span>
+              <span class="fw-700">Partitioned by dt (date)</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Conclusion -->
+    <div class="card">
+      <div class="card-title"><i class="fa-solid fa-flag-checkered text-amber"></i> Conclusions &amp; Future Work</div>
+      <p style="font-size:12px;color:var(--muted);line-height:1.85;margin-bottom:12px;">
+        This project demonstrated that a combination of Apache Kafka, Spark Structured Streaming, and Hive on HDFS can deliver a production-grade real-time security analytics pipeline on commodity hardware. The hybrid rule + ML detection approach proved effective at catching both threshold-crossing bulk attacks (DDoS, brute-force) and subtle multi-dimensional anomalies (payload exfiltration, endpoint abuse ramp-ups).
+      </p>
+      <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">Proposed future enhancements:</div>
+      <div class="space-y-12" style="font-size:12px;">
+        <div style="display:flex;gap:8px;"><i class="fa-solid fa-arrow-right text-accent mt-4"></i><div>Multi-broker Kafka cluster with replication factor 3 for production resilience</div></div>
+        <div style="display:flex;gap:8px;"><i class="fa-solid fa-arrow-right text-accent mt-4"></i><div>Online ML model retraining loop using Spark MLlib Streaming Learners</div></div>
+        <div style="display:flex;gap:8px;"><i class="fa-solid fa-arrow-right text-accent mt-4"></i><div>Integration with IP geolocation API (MaxMind) for geographic threat heatmaps</div></div>
+        <div style="display:flex;gap:8px;"><i class="fa-solid fa-arrow-right text-accent mt-4"></i><div>Alerting integration with PagerDuty / Slack webhooks for automated incident response</div></div>
+        <div style="display:flex;gap:8px;"><i class="fa-solid fa-arrow-right text-accent mt-4"></i><div>Grafana + Prometheus metrics overlay for the Spark streaming job</div></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+</main>
+
+<!-- Footer -->
+<footer>
+  <div class="container">
+    CSE412 Applied Big Data &nbsp;·&nbsp; Real-Time API Threat &amp; Anomaly Detection Platform &nbsp;·&nbsp;
+    Apache Kafka · Spark Structured Streaming · Hive on HDFS · Python 3.10
+  </div>
+</footer>
+
+
+<!-- ═══════════════════════════════════════════════════════
+     JAVASCRIPT
+═══════════════════════════════════════════════════════ -->
+<script>
+/* ── Tab Navigation ────────────────────────────────────── */
+function showTab(id) {
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+    const panel = document.getElementById('panel-' + id);
+    if (panel) panel.classList.add('active');
+    const btn = document.getElementById('tab-' + id);
+    if (btn) btn.classList.add('active');
+}
+
+/* ── Code Tabs ─────────────────────────────────────────── */
+function showCode(id) {
+    document.querySelectorAll('.code-panel').forEach(p => p.style.display = 'none');
+    document.querySelectorAll('.inner-tab').forEach(b => b.classList.remove('active'));
+    const panel = document.getElementById('code-' + id);
+    if (panel) panel.style.display = 'block';
+    event.target.classList.add('active');
+}
+
+/* ── Copy Code ─────────────────────────────────────────── */
+function copyCode(btn) {
+    const pre = btn.closest('.code-block').querySelector('pre');
+    navigator.clipboard.writeText(pre.innerText).then(() => {
+        btn.textContent = 'Copied!';
+        setTimeout(() => btn.textContent = 'Copy', 1500);
+    });
+}
+function copyCmd(btn) {
+    const block = btn.parentElement;
+    const text = block.innerText.replace('Copy\n','').replace('Copied!\n','');
+    navigator.clipboard.writeText(text).then(() => {
+        btn.textContent = 'Copied!';
+        setTimeout(() => btn.textContent = 'Copy', 1500);
+    });
+}
+
+/* ── Chart Initialization ──────────────────────────────── */
+let sparkChart = null;
+function initChart() {
+    const ctx = document.getElementById('sparkChart').getContext('2d');
+    sparkChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: ['--:--:--','--:--:--','--:--:--','--:--:--','--:--:--','--:--:--'],
+            datasets: [{
+                label: 'Requests / min (per 60s window)',
+                data: [12, 14, 11, 15, 13, 18],
+                borderColor: '#f97316',
+                backgroundColor: 'rgba(249,115,22,0.08)',
+                borderWidth: 2.5,
+                fill: true,
+                tension: 0.4,
+                pointBackgroundColor: '#f97316',
+                pointRadius: 3
+            },{
+                label: 'DDoS Threshold (100)',
+                data: [100,100,100,100,100,100],
+                borderColor: 'rgba(248,113,113,0.6)',
+                borderWidth: 1.5,
+                borderDash: [5,4],
+                fill: false,
+                pointRadius: 0,
+                tension: 0
+            }]
+        },
+        options: {
+            responsive: true, maintainAspectRatio: false,
+            animation: { duration: 300 },
+            scales: {
+                x: { ticks: { color: '#6b8299', font:{size:9} }, grid: { color: '#1e2e45' } },
+                y: { ticks: { color: '#6b8299', font:{size:9} }, grid: { color: '#1e2e45' }, min: 0, max: 160 }
+            },
+            plugins: {
+                legend: { labels: { color: '#e2eaf5', font:{size:10}, usePointStyle: true } }
+            }
+        }
+    });
+}
+
+/* ── Simulator State ───────────────────────────────────── */
+let isStreaming = false;
+let eventSource = null;
+let alertCount = 0;
+let eventsCount = 0;
+
+function toggleStream() {
+    fetch('/api/toggle-stream', { method: 'POST' })
+        .then(r => r.json())
+        .then(d => {
+            isStreaming = d.is_streaming;
+            updateStreamUI();
+            if (isStreaming) connectSSE();
+            else disconnectSSE();
+        });
+}
+
+function updateStreamUI() {
+    const btn = document.getElementById('stream-toggle-btn');
+    const icon = document.getElementById('stream-icon');
+    const label = document.getElementById('stream-label');
+    const status = document.getElementById('sim-status');
+
+    if (isStreaming) {
+        btn.className = 'btn btn-stop';
+        icon.className = 'fa-solid fa-square';
+        label.textContent = 'Stop Simulation';
+        status.textContent = 'STREAMING';
+        status.style.color = 'var(--green)';
+    } else {
+        btn.className = 'btn btn-primary';
+        icon.className = 'fa-solid fa-play';
+        label.textContent = 'Start Stream Simulation';
+        status.textContent = 'STOPPED';
+        status.style.color = 'var(--muted)';
+    }
+}
+
+function connectSSE() {
+    if (eventSource) eventSource.close();
+    eventSource = new EventSource('/api/stream');
+    eventSource.onmessage = function(e) {
+        const msg = JSON.parse(e.data);
+        if (msg.type === 'log') handleLogEvent(msg.data);
+        if (msg.type === 'alert') handleAlertEvent(msg.data);
+    };
+    eventSource.onerror = function() {
+        // silently handle disconnect
+    };
+}
+
+function disconnectSSE() {
+    if (eventSource) { eventSource.close(); eventSource = null; }
+}
+
+function handleLogEvent(data) {
+    eventsCount = data.events_streamed;
+    document.getElementById('sim-events').textContent = eventsCount.toLocaleString();
+
+    const feed = document.getElementById('kafka-feed');
+    const empty = feed.querySelector('.empty-state');
+    if (empty) feed.innerHTML = '';
+    if (feed.children.length > 28) feed.removeChild(feed.firstChild);
+
+    const statusClass = data.log.status === 200 ? 'log-ok' : (data.log.status >= 500 ? 'log-err' : 'log-warn');
+    const div = document.createElement('div');
+    div.className = 'log-entry';
+    div.innerHTML = `<span><span class="log-ip">${data.log.ip}</span> ${data.log.endpoint}</span><span class="${statusClass}">${data.log.status} <span style="color:var(--muted)">${data.log.resp_ms}ms</span></span>`;
+    feed.appendChild(div);
+    feed.scrollTop = feed.scrollHeight;
+
+    // Update chart
+    if (sparkChart) {
+        sparkChart.data.labels.shift();
+        sparkChart.data.labels.push(data.log.ts);
+        sparkChart.data.datasets[0].data.shift();
+        sparkChart.data.datasets[0].data.push(data.req_rate);
+        // Update threshold line too
+        sparkChart.data.datasets[1].data.shift();
+        sparkChart.data.datasets[1].data.push(100);
+        sparkChart.update('none');
+    }
+}
+
+function handleAlertEvent(data) {
+    alertCount = data.alerts_triggered;
+    document.getElementById('sim-alerts').textContent = alertCount;
+    document.getElementById('alert-badge').textContent = alertCount + ' Anomalies';
+
+    // Update severity counts
+    const sc = data.severity_counts;
+    document.getElementById('cnt-critical').textContent = sc.CRITICAL || 0;
+    document.getElementById('cnt-high').textContent = sc.HIGH || 0;
+    document.getElementById('cnt-medium').textContent = sc.MEDIUM || 0;
+    document.getElementById('cnt-low').textContent = sc.LOW || 0;
+
+    const feed = document.getElementById('alert-feed');
+    const empty = feed.querySelector('.empty-state');
+    if (empty) feed.innerHTML = '';
+
+    const a = data.alert;
+    const sevClass = a.severity === 'CRITICAL' ? '' : (a.severity === 'HIGH' ? 'high' : 'medium');
+    const sevBadge = `badge-${a.severity.toLowerCase()}`;
+    const card = document.createElement('div');
+    card.className = 'alert-card ' + sevClass;
+    card.innerHTML = `
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+            <span style="font-size:11px;font-weight:700;color:${a.severity==='CRITICAL'?'var(--red)':a.severity==='HIGH'?'var(--amber)':'var(--purple)'}">
+                <i class="fa-solid fa-triangle-exclamation mr-1"></i>${a.attack_type}
+            </span>
+            <span class="badge ${sevBadge}">${a.severity}</span>
+        </div>
+        <div style="font-size:10px;color:var(--muted);">Target: <strong style="color:var(--text);">${a.client_ip}</strong> &nbsp;·&nbsp; ${a.val}</div>
+        <div style="font-size:9px;color:var(--muted);margin-top:3px;font-family:'Fira Code',monospace;">${a.timestamp.substring(0,19).replace('T',' ')}</div>
+    `;
+    feed.insertBefore(card, feed.firstChild);
+}
+
+function triggerAttack(type) {
+    fetch('/api/trigger-attack?attack_type=' + type, { method: 'POST' })
+        .then(() => {
+            if (!isStreaming) {
+                isStreaming = true;
+                updateStreamUI();
+                connectSSE();
+            }
+        });
+}
+
+function resetSim() {
+    disconnectSSE();
+    isStreaming = false;
+    alertCount = 0;
+    eventsCount = 0;
+    updateStreamUI();
+    document.getElementById('sim-events').textContent = '0';
+    document.getElementById('sim-alerts').textContent = '0';
+    document.getElementById('alert-badge').textContent = '0 Anomalies';
+    document.getElementById('cnt-critical').textContent = '0';
+    document.getElementById('cnt-high').textContent = '0';
+    document.getElementById('cnt-medium').textContent = '0';
+    document.getElementById('cnt-low').textContent = '0';
+    document.getElementById('kafka-feed').innerHTML = '<div class="empty-state">Click "Start Stream Simulation" to begin ingesting API logs…</div>';
+    document.getElementById('alert-feed').innerHTML = '<div class="empty-state">No security alerts detected. Normal traffic flowing…</div>';
+    if (sparkChart) {
+        sparkChart.data.labels = ['--:--:--','--:--:--','--:--:--','--:--:--','--:--:--','--:--:--'];
+        sparkChart.data.datasets[0].data = [12,14,11,15,13,18];
+        sparkChart.data.datasets[1].data = [100,100,100,100,100,100];
+        sparkChart.update();
+    }
+    fetch('/api/reset', { method: 'POST' });
+}
+
+/* ── Hive Query ────────────────────────────────────────── */
+function runHiveQuery() {
+    const sql = document.getElementById('hive-sql').value;
+    document.getElementById('hive-exec-info').textContent = 'Executing…';
+    fetch('/api/run-hive-query', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sql })
+    })
+    .then(r => r.json())
+    .then(d => {
+        document.getElementById('hive-exec-info').innerHTML =
+            `<i class="fa-solid fa-check text-green mr-1"></i> Engine: <strong>${d.engine}</strong> &nbsp;·&nbsp; Execution: <strong>${d.execution_time_ms}ms</strong> &nbsp;·&nbsp; Rows: <strong>${d.rows.length}</strong>`;
+
+        if (!d.rows.length) {
+            document.getElementById('hive-results').innerHTML = '<div class="empty-state" style="padding:20px;">No results returned.</div>';
+            return;
+        }
+        const cols = Object.keys(d.rows[0]);
+        let html = `<div style="overflow-x:auto;"><table class="results"><thead><tr>${cols.map(c=>`<th>${c}</th>`).join('')}</tr></thead><tbody>`;
+        d.rows.forEach(row => {
+            html += '<tr>' + cols.map(c => {
+                let val = row[c];
+                let cls = '';
+                if (c === 'attack_type') cls = 'style="color:var(--red);font-weight:700;"';
+                else if (c === 'severity') {
+                    const sv = val.toLowerCase();
+                    cls = `class="badge badge-${sv}"`;
+                    return `<td><span ${cls}>${val}</span></td>`;
+                }
+                else if (c === 'client_ip') cls = 'style="color:var(--accent);font-family:\'Fira Code\',monospace;"';
+                return `<td ${cls}>${val}</td>`;
+            }).join('') + '</tr>';
+        });
+        html += '</tbody></table></div>';
+        document.getElementById('hive-results').innerHTML = html;
+    });
+}
+
+function clearHiveResults() {
+    document.getElementById('hive-results').innerHTML = '<div class="empty-state" style="padding:20px;">Query output will appear here after execution…</div>';
+    document.getElementById('hive-exec-info').textContent = '';
+}
+
+/* ── Init ──────────────────────────────────────────────── */
+window.addEventListener('DOMContentLoaded', () => {
+    initChart();
+});
+</script>
+</body>
+</html>

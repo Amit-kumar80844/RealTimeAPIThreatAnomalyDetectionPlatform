@@ -1,0 +1,1 @@
+# Spark detection subpackage
